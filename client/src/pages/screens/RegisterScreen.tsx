@@ -13,8 +13,11 @@ export default function RegisterScreen() {
   const [diff, setDiff] = useState<Difficulty>(state.difficulty);
   const [challenge, setChallenge] = useState(state.challenge);
 
+  const isBerget = name.trim().toUpperCase() === 'BERGET';
+
   function handleStart() {
     if (!name.trim()) return;
+    if (isBerget) return;
     dispatch({ type: 'SET_PLAYER', player: { rank, name: name.trim(), unit: unit.trim() || '495 CSSB' } });
     dispatch({ type: 'SET_DIFFICULTY', difficulty: diff });
     dispatch({ type: 'SET_CHALLENGE', challenge: challenge.trim() || 'MOOSE-495' });
@@ -44,17 +47,23 @@ export default function RegisterScreen() {
                 {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-2 mono">LAST NAME</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="SMITH"
-                className="mil-input"
-                style={{ textTransform: 'uppercase' }}
-              />
-            </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-2 mono">LAST NAME</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="SMITH"
+              className={`mil-input ${isBerget ? 'border-red-500/60' : ''}`}
+              style={{ textTransform: 'uppercase' }}
+            />
+            {isBerget && (
+              <div className="mt-2 p-3 rounded-lg border border-red-500/40 bg-red-500/10 animate-fade-in-up">
+                <div className="text-xs text-red-400 mono font-bold mb-1">⛔ ACCESS DENIED</div>
+                <p className="text-xs text-red-300/80">Sorry, soldier. You are not handsome enough to be CPT Berget. Please enter your actual name and try again.</p>
+              </div>
+            )}
+          </div>
           </div>
           <div>
             <label className="block text-xs text-slate-500 mb-2 mono">UNIT</label>
@@ -118,7 +127,7 @@ export default function RegisterScreen() {
           size="lg"
           className="w-full"
           onClick={handleStart}
-          disabled={!name.trim()}
+          disabled={!name.trim() || isBerget}
         >
           ▶ REPORT FOR DUTY
         </MilButton>
