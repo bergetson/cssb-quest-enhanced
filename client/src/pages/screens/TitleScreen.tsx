@@ -113,7 +113,7 @@ export default function TitleScreen() {
 
         {/* Footer */}
         <div className="mt-8 text-[10px] text-slate-700 mono tracking-widest">
-          495 CSSB — THE PREMIER CSSB — STAFF EXCELLENCE
+          495 CSSB — THE PREMIER CSSB — STAFF EXCELLENCE — DEV BY CPT BERGET
         </div>
       </div>
     </div>
