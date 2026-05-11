@@ -3,7 +3,35 @@ import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilCard, MilButton, MilTag } from '../../components/GameUI';
 import { toast } from 'sonner';
 
-// ─── Tic-Tac-Toe ─────────────────────────────────────────────────────────────
+// ─── Figarelli Tic-Tac-Toe ──────────────────────────────────────────────────
+// LTC Figarelli uses unnecessarily large words. Win for 35 CR.
+
+const FIGARELLI_QUOTES = [
+  "I must say, your tactical disposition demonstrates a fundamental misapprehension of the stratification of risk.",
+  "Fascinating. Your maneuver exhibits a rather precipitous disregard for the operational calculus.",
+  "The synergistic confluence of your decisions is... suboptimal.",
+  "I've seen more sophisticated decision-making in a BOLC After Action Review.",
+  "Your positional paradigm lacks the requisite doctrinal underpinning.",
+  "Interesting. A most egregious miscalculation of the operational environment.",
+  "The stratification of risk you've undertaken here is, frankly, bewildering.",
+  "I would characterize your approach as a manifestation of cognitive dissonance.",
+  "Your strategic acumen appears inversely proportional to your confidence.",
+  "This is precisely the kind of substandard staff work that necessitates remediation.",
+];
+
+const FIGARELLI_WIN_QUOTES = [
+  "Checkmate, soldier. The stratification of risk was never in your favor.",
+  "A predictable outcome, given your propensity for suboptimal decision-making.",
+  "I anticipated this denouement with considerable prescience.",
+  "Your defeat is a manifestation of inadequate operational planning.",
+];
+
+const FIGARELLI_LOSE_QUOTES = [
+  "I... find myself in an unanticipated predicament. Well played.",
+  "Extraordinary. You've demonstrated an unprecedented stratification of competence.",
+  "I must recalibrate my assessment of your cognitive capabilities.",
+  "This outcome was... not within my operational parameters.",
+];
 
 function checkWinner(board: string[]): string | null {
   const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
@@ -44,6 +72,7 @@ function TicTacToe({ onScore }: { onScore: (s: number) => void }) {
   const [winner, setWinner] = useState<string | null>(null);
   const [scored, setScored] = useState(false);
   const [wins, setWins] = useState(0);
+  const [figarelliQuote, setFigarelliQuote] = useState(FIGARELLI_QUOTES[0]);
 
   function handleClick(i: number) {
     if (board[i] || done || turn !== 'X') return;
@@ -56,28 +85,42 @@ function TicTacToe({ onScore }: { onScore: (s: number) => void }) {
         onScore(pts);
         setScored(true);
         if (w === 'X') setWins(x => x + 1);
+        setFigarelliQuote(w === 'X'
+          ? FIGARELLI_LOSE_QUOTES[Math.floor(Math.random() * FIGARELLI_LOSE_QUOTES.length)]
+          : FIGARELLI_WIN_QUOTES[Math.floor(Math.random() * FIGARELLI_WIN_QUOTES.length)]);
       }
       return;
     }
-    // AI move
+    // LTC Figarelli (AI) move — he mutters a quote after each move
     const aiMove = getBestMove(nb, 'O');
     nb[aiMove] = 'O';
+    setFigarelliQuote(FIGARELLI_QUOTES[Math.floor(Math.random() * FIGARELLI_QUOTES.length)]);
     const w2 = checkWinner(nb);
     setBoard(nb);
     if (w2 || nb.every(Boolean)) {
       setWinner(w2); setDone(true);
-      if (!scored) { onScore(w2 === 'X' ? 35 : 0); setScored(true); }
+      if (!scored) {
+        onScore(w2 === 'X' ? 35 : 0); setScored(true);
+        setFigarelliQuote(w2 === 'X'
+          ? FIGARELLI_LOSE_QUOTES[Math.floor(Math.random() * FIGARELLI_LOSE_QUOTES.length)]
+          : FIGARELLI_WIN_QUOTES[Math.floor(Math.random() * FIGARELLI_WIN_QUOTES.length)]);
+      }
     } else setTurn('X');
   }
 
-  function reset() { setBoard(Array(9).fill('')); setTurn('X'); setDone(false); setWinner(null); setScored(false); }
+  function reset() { setBoard(Array(9).fill('')); setTurn('X'); setDone(false); setWinner(null); setScored(false); setFigarelliQuote(FIGARELLI_QUOTES[0]); }
 
   return (
     <div className="animate-fade-in-up">
+      {/* Figarelli quote bubble */}
+      <div className="mil-card p-3 mb-4 border-yellow-400/20">
+        <div className="text-[10px] text-yellow-400 mono font-bold mb-1">🎖️ LTC FIGARELLI SAYS:</div>
+        <p className="text-xs text-slate-300 italic">"{figarelliQuote}"</p>
+      </div>
       <div className="flex justify-between items-center mb-3">
-        <div className="text-xs text-slate-500 mono">Wins: <span className="text-yellow-400 font-bold">{wins}</span></div>
+        <div className="text-xs text-slate-500 mono">Wins vs Figarelli: <span className="text-yellow-400 font-bold">{wins}</span></div>
         <div className="text-xs text-slate-400 mono">
-          {done ? (winner === 'X' ? '🏆 WIN! +35 CR' : winner === 'O' ? '❌ AI WINS' : '🤝 DRAW') : `Your turn (X)`}
+          {done ? (winner === 'X' ? '🏆 WIN! +35 CR' : winner === 'O' ? '❌ FIGARELLI WINS' : '🤝 DRAW') : `Your turn (X)`}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto mb-4">
@@ -670,14 +713,221 @@ function StaffTriviaBlitz({ onScore }: { onScore: (s: number) => void }) {
   );
 }
 
-// ─── Main Minigame Screen ─────────────────────────────────────────────────────
+// ─── Bash Resource Battle ───────────────────────────────────────────────────────
+// SSG Bash, the supply sergeant, quotes historic generals.
+// Alternate turns allocating logistics resources. Outmaneuver Bash to win.
+
+const BASH_QUOTES = [
+  { quote: "'No plan survives first contact with the enemy.' — Moltke the Elder", action: "Bash seizes the fuel point!" },
+  { quote: "'An army marches on its stomach.' — Napoleon Bonaparte", action: "Bash stockpiles Class I!" },
+  { quote: "'Amateurs talk strategy. Professionals talk logistics.' — Omar Bradley", action: "Bash secures the ammo ASP!" },
+  { quote: "'The line between disorder and order lies in logistics.' — Sun Tzu", action: "Bash controls the MSR!" },
+  { quote: "'In war, the moral is to the physical as three is to one.' — Napoleon", action: "Bash rallies his supply chain!" },
+  { quote: "'Speed is the essence of war.' — Sun Tzu", action: "Bash fast-tracks a requisition!" },
+  { quote: "'The more you sweat in peace, the less you bleed in war.' — Patton", action: "Bash pre-positions reserves!" },
+  { quote: "'Logistics is the ball and chain of armored warfare.' — Rommel", action: "Bash denies your Class III!" },
+  { quote: "'Give me enough medals and I will win you any war.' — Napoleon", action: "Bash motivates his team!" },
+  { quote: "'In preparing for battle, I have always found that plans are useless, but planning is indispensable.' — Eisenhower", action: "Bash revises his LOGSTAT!" },
+];
+
+type ResourceType = 'fuel' | 'ammo' | 'food' | 'water' | 'parts';
+type ResourceNode = { id: string; type: ResourceType; name: string; emoji: string; value: number; owner: 'player' | 'bash' | null };
+
+function BashResourceBattle({ onScore, onBashDefeated }: { onScore: (s: number) => void; onBashDefeated?: () => void }) {
+  const INITIAL_NODES: ResourceNode[] = [
+    { id: 'n1', type: 'fuel',  name: 'Fuel Point Alpha',   emoji: '⛽', value: 30, owner: null },
+    { id: 'n2', type: 'ammo',  name: 'ASP Bravo',          emoji: '💥', value: 25, owner: null },
+    { id: 'n3', type: 'food',  name: 'Class I Site Charlie', emoji: '🍱', value: 20, owner: null },
+    { id: 'n4', type: 'water', name: 'Water Point Delta',  emoji: '💧', value: 20, owner: null },
+    { id: 'n5', type: 'parts', name: 'Parts Depot Echo',   emoji: '🔧', value: 15, owner: null },
+    { id: 'n6', type: 'fuel',  name: 'Fuel Point Foxtrot', emoji: '⛽', value: 25, owner: null },
+    { id: 'n7', type: 'ammo',  name: 'ASP Golf',           emoji: '💥', value: 20, owner: null },
+    { id: 'n8', type: 'food',  name: 'Class I Site Hotel', emoji: '🍱', value: 15, owner: null },
+    { id: 'n9', type: 'water', name: 'Water Point India',  emoji: '💧', value: 15, owner: null },
+  ];
+
+  const [nodes, setNodes] = useState<ResourceNode[]>(INITIAL_NODES);
+  const [turn, setTurn] = useState<'player' | 'bash'>('player');
+  const [turnsLeft, setTurnsLeft] = useState(9);
+  const [bashQuote, setBashQuote] = useState(BASH_QUOTES[0]);
+  const [log, setLog] = useState<string[]>(['Game started. Claim resource nodes before SSG Bash does!']);
+  const [done, setDone] = useState(false);
+  const [result, setResult] = useState<{ playerScore: number; bashScore: number; won: boolean } | null>(null);
+  const bashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function addLog(msg: string) {
+    setLog(prev => [msg, ...prev].slice(0, 8));
+  }
+
+  function claimNode(nodeId: string) {
+    if (turn !== 'player' || done) return;
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node || node.owner !== null) return;
+
+    setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, owner: 'player' } : n));
+    addLog(`✅ You secured ${node.name} (+${node.value} pts)`);
+    setTurn('bash');
+    setTurnsLeft(t => t - 1);
+  }
+
+  // Bash AI turn
+  useEffect(() => {
+    if (turn !== 'bash' || done) return;
+    const q = BASH_QUOTES[Math.floor(Math.random() * BASH_QUOTES.length)];
+    setBashQuote(q);
+
+    bashTimerRef.current = setTimeout(() => {
+      setNodes(prev => {
+        const unclaimed = prev.filter(n => n.owner === null);
+        if (unclaimed.length === 0) return prev;
+        // Bash prioritizes high-value nodes
+        const sorted = [...unclaimed].sort((a, b) => b.value - a.value);
+        const target = sorted[0];
+        addLog(`📦 Bash: "${q.quote.split('—')[0].trim()}" — ${q.action}`);
+        return prev.map(n => n.id === target.id ? { ...n, owner: 'bash' } : n);
+      });
+      setTurn('player');
+    }, 1200);
+
+    return () => { if (bashTimerRef.current) clearTimeout(bashTimerRef.current); };
+  }, [turn, done]);
+
+  // Check end condition
+  useEffect(() => {
+    const unclaimed = nodes.filter(n => n.owner === null);
+    if (unclaimed.length === 0 && turnsLeft <= 0) {
+      endGame();
+    } else if (turnsLeft <= 0 && nodes.filter(n => n.owner === null).length === 0) {
+      endGame();
+    }
+  }, [nodes, turnsLeft]);
+
+  function endGame() {
+    if (done) return;
+    setDone(true);
+    const playerScore = nodes.filter(n => n.owner === 'player').reduce((s, n) => s + n.value, 0);
+    const bashScore = nodes.filter(n => n.owner === 'bash').reduce((s, n) => s + n.value, 0);
+    const won = playerScore > bashScore;
+    setResult({ playerScore, bashScore, won });
+    const pts = won ? 60 : 15;
+    onScore(pts);
+    if (won && onBashDefeated) onBashDefeated();
+  }
+
+  function reset() {
+    setNodes(INITIAL_NODES);
+    setTurn('player');
+    setTurnsLeft(9);
+    setBashQuote(BASH_QUOTES[0]);
+    setLog(['Game started. Claim resource nodes before SSG Bash does!']);
+    setDone(false);
+    setResult(null);
+  }
+
+  const playerScore = nodes.filter(n => n.owner === 'player').reduce((s, n) => s + n.value, 0);
+  const bashScore = nodes.filter(n => n.owner === 'bash').reduce((s, n) => s + n.value, 0);
+  const totalValue = nodes.reduce((s, n) => s + n.value, 0);
+
+  return (
+    <div className="animate-fade-in-up">
+      {/* Bash quote */}
+      <div className="mil-card p-3 mb-4 border-orange-400/20">
+        <div className="text-[10px] text-orange-400 mono font-bold mb-1">📦 SSG BASH SAYS:</div>
+        <p className="text-xs text-slate-300 italic">"{bashQuote.quote}"</p>
+      </div>
+
+      {/* Score bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-xs mono mb-1">
+          <span className="text-cyan-400 font-bold">YOU: {playerScore}</span>
+          <span className="text-slate-500">Total: {totalValue}</span>
+          <span className="text-red-400 font-bold">BASH: {bashScore}</span>
+        </div>
+        <div className="h-2 rounded-full bg-white/5 overflow-hidden flex">
+          <div className="h-full bg-cyan-500 transition-all" style={{ width: `${(playerScore / totalValue) * 100}%` }} />
+          <div className="h-full bg-red-500 transition-all" style={{ width: `${(bashScore / totalValue) * 100}%` }} />
+        </div>
+      </div>
+
+      {/* Turn indicator */}
+      {!done && (
+        <div className={`text-center text-xs font-bold mono mb-4 py-2 rounded-lg ${
+          turn === 'player' ? 'bg-cyan-400/10 text-cyan-400' : 'bg-orange-400/10 text-orange-400 animate-pulse'
+        }`}>
+          {turn === 'player' ? '→ YOUR TURN — Claim a resource node' : '⏳ SSG Bash is planning his move...'}
+        </div>
+      )}
+
+      {/* Resource nodes grid */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {nodes.map(node => (
+          <button
+            key={node.id}
+            onClick={() => claimNode(node.id)}
+            disabled={node.owner !== null || turn !== 'player' || done}
+            className={`p-2 rounded-xl border text-center transition-all ${
+              node.owner === 'player' ? 'border-cyan-400/60 bg-cyan-400/10 cursor-default' :
+              node.owner === 'bash' ? 'border-red-400/60 bg-red-400/10 cursor-default' :
+              turn === 'player' ? 'border-white/15 bg-white/3 hover:border-yellow-400/50 hover:bg-yellow-400/5 cursor-pointer' :
+              'border-white/8 bg-white/2 cursor-not-allowed opacity-60'
+            }`}
+          >
+            <div className="text-xl mb-0.5">{node.emoji}</div>
+            <div className="text-[9px] mono leading-tight text-slate-400">{node.name.split(' ').slice(-1)[0]}</div>
+            <div className={`text-xs font-black ${
+              node.owner === 'player' ? 'text-cyan-400' :
+              node.owner === 'bash' ? 'text-red-400' : 'text-yellow-400'
+            }`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              {node.owner === 'player' ? '✔ YOURS' : node.owner === 'bash' ? '✖ BASH' : `+${node.value}`}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Log */}
+      <div className="mil-card p-3 mb-4 max-h-24 overflow-y-auto">
+        {log.map((entry, i) => (
+          <div key={i} className="text-[10px] mono text-slate-500 leading-relaxed">{entry}</div>
+        ))}
+      </div>
+
+      {done && result && (
+        <div className={`p-4 rounded-xl border mb-3 ${
+          result.won ? 'border-emerald-400/40 bg-emerald-400/8' : 'border-red-400/40 bg-red-400/8'
+        }`}>
+          <div className="text-xl font-black mb-1" style={{ fontFamily: 'Rajdhani, sans-serif', color: result.won ? 'oklch(0.68 0.18 160)' : 'oklch(0.62 0.22 25)' }}>
+            {result.won ? '🏆 VICTORY! You beat Bash at chess!' : '📦 BASH WINS'}
+          </div>
+          <div className="text-xs mono text-slate-400">
+            Your score: {result.playerScore} | Bash: {result.bashScore}
+          </div>
+          {result.won && (
+            <div className="text-xs text-emerald-400 mt-1">
+              🏆 Achievement unlocked: "Beating Bash at Chess"
+            </div>
+          )}
+          {!result.won && (
+            <div className="text-xs text-slate-500 italic mt-1">
+              Bash mutters: "{BASH_QUOTES[Math.floor(Math.random() * BASH_QUOTES.length)].quote}"
+            </div>
+          )}
+        </div>
+      )}
+
+      {done && <MilButton color="cyan" className="w-full" onClick={reset}>PLAY AGAIN</MilButton>}
+    </div>
+  );
+}
+
+// ─── Main Minigame Screen ─────────────────────────────────────────────────────────────
 
 const GAMES = [
   { id: 'convoy', name: 'CONVOY COMMANDER', emoji: '🚛', desc: 'Load the LOGPAC. Prioritize critical cargo. No overloading.', color: 'orange', difficulty: 'MEDIUM' },
   { id: 'trivia', name: 'STAFF TRIVIA BLITZ', emoji: '🧠', desc: '10 questions. 15 seconds each. Speed bonus applies.', color: 'purple', difficulty: 'HARD' },
   { id: 'math', name: 'MATH SPRINT', emoji: '🧮', desc: '60-second sustainment math blitz. Streak multiplier.', color: 'green', difficulty: 'HARD' },
-  { id: 'ttt', name: 'TIC-TAC-TOE', emoji: '⭕', desc: 'Beat the unbeatable AI. Win for 35 CR.', color: 'cyan', difficulty: 'EASY' },
+  { id: 'ttt', name: 'TIC-TAC-TOE vs FIGARELLI', emoji: '⭕', desc: 'Beat LTC Figarelli. He will use unnecessarily large words.', color: 'cyan', difficulty: 'EASY' },
   { id: 'timing', name: 'TIMING CHALLENGE', emoji: '⏱️', desc: 'Stop the timer at the exact target time.', color: 'gold', difficulty: 'MEDIUM' },
+  { id: 'bash', name: 'BASH RESOURCE BATTLE', emoji: '♟️', desc: 'Outmaneuver SSG Bash. He quotes historic generals. Win for 60 CR.', color: 'orange', difficulty: 'MEDIUM' },
 ] as const;
 
 type GameId = typeof GAMES[number]['id'];
@@ -693,6 +943,18 @@ export default function MinigameScreen() {
       dispatch({ type: 'ADD_XP', amount: Math.ceil(s / 2) });
       setTotalEarned(t => t + s);
     }
+  }
+
+  function handleBashDefeated() {
+    dispatch({ type: 'BASH_DEFEATED' });
+    dispatch({ type: 'ADD_ACHIEVEMENT', achievement: {
+      id: 'beat_bash',
+      name: 'Beating Bash at Chess',
+      desc: 'Outmaneuvered SSG Bash in the Resource Battle. He quoted Patton. You won anyway.',
+      emoji: '♟️',
+      earnedAt: Date.now(),
+    }});
+    toast.success('🏆 Achievement unlocked: Beating Bash at Chess!');
   }
 
   const diffColor = (d: string) => d === 'EASY' ? 'text-emerald-400' : d === 'MEDIUM' ? 'text-orange-400' : 'text-red-400';
@@ -744,6 +1006,7 @@ export default function MinigameScreen() {
               {active === 'trivia' && <StaffTriviaBlitz onScore={handleScore} />}
               {active === 'math' && <MathSprint onScore={handleScore} />}
               {active === 'ttt' && <TicTacToe onScore={handleScore} />}
+              {active === 'bash' && <BashResourceBattle onScore={handleScore} onBashDefeated={handleBashDefeated} />}
               {active === 'timing' && <TimingChallenge onScore={handleScore} />}
             </MilCard>
           </div>

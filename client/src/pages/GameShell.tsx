@@ -14,6 +14,9 @@ import CalcScreen from './screens/CalcScreen';
 import DailyScreen from './screens/DailyScreen';
 import MinigameScreen from './screens/MinigameScreen';
 import LeaderboardScreen from './screens/LeaderboardScreen';
+import PptBossScreen from './screens/PptBossScreen';
+import DorvalCallScreen from './screens/DorvalCallScreen';
+import AchievementsScreen from './screens/AchievementsScreen';
 
 export default function GameShell() {
   const { state } = useGame();
@@ -34,6 +37,11 @@ export default function GameShell() {
     daily: <DailyScreen />,
     minigame: <MinigameScreen />,
     leaderboard: <LeaderboardScreen />,
+    ppt_boss: <PptBossScreen />,
+    dorval_call: <DorvalCallScreen />,
+    achievements: <AchievementsScreen />,
+    inventory: <StoreScreen />, // inventory tab within store
+    settings: <HubScreen />,
   };
 
   return (

@@ -4,6 +4,7 @@ import {
   StatBar, XPBar, StreakBadge, Divider,
 } from '../../components/GameUI';
 import { DIFFS } from '../../lib/gameData';
+import { ChaosMeter } from '../../components/ChaosOverlay';
 
 const MISSIONS = [
   { id: 'm1',  title: 'MISSION 1',  name: 'WARNO DROP',            sub: 'Receipt of mission, time analysis, initial WARNO',         color: 'cyan',   icon: '📡', xp: 80,  diff: 'CRAWL' },
@@ -55,6 +56,11 @@ export default function HubScreen() {
   // Find next unlocked mission
   const nextMissionIdx = MISSIONS.findIndex((m, i) => !state.completed[m.id] && (i === 0 || state.completed[MISSIONS[i - 1].id]));
 
+  const completedMissionCount = Object.keys(state.completed).length;
+  const pptBossAvailable = completedMissionCount >= 5 && !state.pptBossDefeated;
+  const pptBossDefeated = state.pptBossDefeated;
+  const achievementCount = Object.keys(state.achievements).length;
+
   return (
     <ScreenWrap>
       <div className="max-w-4xl mx-auto px-4 py-6">
@@ -91,6 +97,11 @@ export default function HubScreen() {
             </div>
           </div>
 
+          {/* Chaos Meter */}
+          <div className="mt-3">
+            <ChaosMeter value={state.chaosMeter} />
+          </div>
+
           {/* Campaign progress bar */}
           <div className="mt-4 pt-4 border-t border-yellow-400/10">
             <div className="flex justify-between items-center mb-1.5">
@@ -101,6 +112,54 @@ export default function HubScreen() {
               <div className="progress-mil-bar" style={{ width: `${overallPct}%` }} />
             </div>
           </div>
+        </div>
+
+        {/* Achievements & PPT Boss Quick Bar */}
+        <div className="flex gap-2 mb-3 animate-fade-in-up">
+          <button
+            onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'achievements' })}
+            className="flex-1 mil-card p-3 hover:-translate-y-0.5 transition-transform text-left"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              <div>
+                <div className="text-xs font-bold text-yellow-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>ACHIEVEMENTS</div>
+                <div className="text-[10px] text-slate-500 mono">{achievementCount} unlocked</div>
+              </div>
+            </div>
+          </button>
+          {state.candyCount > 0 && (
+            <div className="mil-card p-3 flex items-center gap-2">
+              <span className="text-xl">🍬</span>
+              <div>
+                <div className="text-xs font-bold text-pink-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>CANDY</div>
+                <div className="text-[10px] text-slate-500 mono">×{state.candyCount}</div>
+              </div>
+            </div>
+          )}
+          {pptBossAvailable && (
+            <button
+              onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'ppt_boss' })}
+              className="flex-1 mil-card mil-card-red p-3 hover:-translate-y-0.5 transition-transform text-left animate-pulse-glow"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📊</span>
+                <div>
+                  <div className="text-xs font-bold text-red-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>BOSS BATTLE</div>
+                  <div className="text-[10px] text-slate-500 mono">CPT PowerPoint awaits</div>
+                </div>
+              </div>
+            </button>
+          )}
+          {pptBossDefeated && (
+            <div className="mil-card p-3 flex items-center gap-2">
+              <span className="text-xl">📊</span>
+              <div>
+                <div className="text-xs font-bold text-green-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>PPT DEFEATED</div>
+                <div className="text-[10px] text-slate-500 mono">Slides vanquished</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scenario Info Bar */}
@@ -237,7 +296,7 @@ export default function HubScreen() {
         </div>
 
         {/* Inventory */}
-        {(state.rayCards > 0 || state.mercyCards > 0 || state.redbull > 0 || state.e4) && (
+        {(state.rayCards > 0 || state.mercyCards > 0 || state.redbull > 0 || state.e4 || state.candyCount > 0 || state.activeCosmeticId) && (
           <div className="mil-card p-4 mb-5">
             <div className="text-[10px] text-orange-400/80 mono tracking-[0.2em] mb-3">// ACTIVE INVENTORY</div>
             <div className="flex flex-wrap gap-2">
@@ -263,6 +322,18 @@ export default function HubScreen() {
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-lime-400/30 bg-lime-400/8">
                   <span>🤝</span>
                   <span className="text-xs text-lime-300 mono">E4 Mafia Active</span>
+                </div>
+              )}
+              {state.candyCount > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-400/30 bg-pink-400/8">
+                  <span>🍬</span>
+                  <span className="text-xs text-pink-300 mono">Candy ×{state.candyCount}</span>
+                </div>
+              )}
+              {state.activeCosmeticId && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-yellow-400/30 bg-yellow-400/8">
+                  <span>✨</span>
+                  <span className="text-xs text-yellow-300 mono">Cosmetic: {state.activeCosmeticId.replace(/_/g, ' ')}</span>
                 </div>
               )}
             </div>

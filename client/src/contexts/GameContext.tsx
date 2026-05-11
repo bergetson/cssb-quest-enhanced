@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback } 
 import {
   GameState, loadState, saveState, baseState,
   makeScenario, grade, levelFromXp, xpForLevel,
-  type Stats, type Badge, type ResultData, type Difficulty,
+  type Stats, type Badge, type ResultData, type Difficulty, type Achievement,
 } from '../lib/gameData';
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ type Action =
   | { type: 'SPEND_CREDS'; amount: number }
   | { type: 'ADD_XP'; amount: number }
   | { type: 'ADD_BADGE'; badge: Badge }
+  | { type: 'ADD_ACHIEVEMENT'; achievement: Achievement }
   | { type: 'ADD_SHAME'; id: string; name: string; desc: string }
   | { type: 'ADD_LOG'; text: string }
   | { type: 'ADD_NOTEBOOK'; title: string; text: string }
@@ -37,7 +38,20 @@ type Action =
   | { type: 'RESET_GAME' }
   | { type: 'INIT_MISSION'; missionIndex: number }
   | { type: 'ADD_STREAK' }
-  | { type: 'RESET_STREAK' };
+  | { type: 'RESET_STREAK' }
+  // New actions
+  | { type: 'ADD_CHAOS'; amount: number }
+  | { type: 'REDUCE_CHAOS'; amount: number }
+  | { type: 'RESET_CHAOS' }
+  | { type: 'SET_ACTIVE_COSMETIC'; id: string | null }
+  | { type: 'UNLOCK_PPT_BOSS' }
+  | { type: 'DEFEAT_PPT_BOSS' }
+  | { type: 'ADD_CANDY'; amount: number }
+  | { type: 'USE_CANDY' }
+  | { type: 'SNEDIGAR_HIT' }
+  | { type: 'BASH_DEFEATED' }
+  | { type: 'USE_E4_FAVOR' }
+  | { type: 'ADD_STORE_ITEM'; itemId: string };
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -77,6 +91,12 @@ function reducer(state: GameState, action: Action): GameState {
       const log = [new Date().toLocaleTimeString() + ': Badge: ' + action.badge.name, ...state.log].slice(0, 80);
       return { ...state, badges, log };
     }
+    case 'ADD_ACHIEVEMENT': {
+      if (state.achievements[action.achievement.id]) return state;
+      const achievements = { ...state.achievements, [action.achievement.id]: action.achievement };
+      const log = [new Date().toLocaleTimeString() + ': Achievement: ' + action.achievement.name, ...state.log].slice(0, 80);
+      return { ...state, achievements, log };
+    }
     case 'ADD_SHAME': {
       if (state.hall[action.id]) return state;
       const hall = { ...state.hall, [action.id]: { id: action.id, name: action.name, desc: action.desc } };
@@ -108,27 +128,63 @@ function reducer(state: GameState, action: Action): GameState {
         ...state.missions,
         [action.missionId]: { score: action.score, max: action.max, grade: g, attempts },
       };
-      const completed = { ...state.completed, [action.missionId]: true };
+      // Only mark completed if passed (70%+)
+      const pct = action.max > 0 ? action.score / action.max : 0;
+      const passed = pct >= 0.70;
+      const completed = passed
+        ? { ...state.completed, [action.missionId]: true }
+        : state.completed;
       return { ...state, missions, completed };
     }
     case 'BUY_ITEM': {
       if (state.creds < action.cost) return state;
       const inventory = { ...state.inventory };
       inventory[action.itemId] = (inventory[action.itemId] || 0) + 1;
-      // Apply immediate effects
       let newState = { ...state, creds: state.creds - action.cost, inventory };
-      if (action.itemId === 'ray_card') newState = { ...newState, rayCards: newState.rayCards + 1 };
+      // Track all bought items for achievements
+      if (!newState.storeItemsBought.includes(action.itemId)) {
+        newState = { ...newState, storeItemsBought: [...newState.storeItemsBought, action.itemId] };
+      }
+      // Apply immediate effects
+      if (action.itemId === 'ray_card' || action.itemId === 'ray_favor') newState = { ...newState, rayCards: newState.rayCards + 1 };
       if (action.itemId === 'mercy') newState = { ...newState, mercyCards: newState.mercyCards + 1 };
       if (action.itemId === 'e4') newState = { ...newState, e4: true };
       if (action.itemId === 'secret_phrase') newState = { ...newState, secret: true };
       if (action.itemId === 'redbull') newState = { ...newState, redbull: newState.redbull + 4 };
+      // Tornado: chaos+20 but gives XP
+      if (action.itemId === 'tornado') {
+        newState = { ...newState, chaosMeter: Math.min(100, newState.chaosMeter + 20), xp: newState.xp + 30 };
+      }
+      // Dorval call: go to dorval_call screen
+      if (action.itemId === 'dorval_phone_call') {
+        newState = { ...newState, screen: 'dorval_call' };
+      }
       return newState;
     }
     case 'USE_ITEM': {
       const inventory = { ...state.inventory };
       if (!inventory[action.itemId]) return state;
       inventory[action.itemId] = Math.max(0, inventory[action.itemId] - 1);
-      return { ...state, inventory };
+      let newState = { ...state, inventory };
+      // Cosmetics: set active cosmetic
+      if (['beret','coffee_mug','whiteboard_marker','funny_hat','iron_man_mustache','aviator_glasses'].includes(action.itemId)) {
+        newState = { ...newState, activeCosmeticId: action.itemId };
+      }
+      // Coffee: boost focus and clarity
+      if (action.itemId === 'coffee' || action.itemId === 'coffee_mug') {
+        const s = { ...newState.stats, focus: clamp(newState.stats.focus + 15), clarity: clamp(newState.stats.clarity + 10) };
+        newState = { ...newState, stats: s };
+      }
+      // Aviator glasses: clarity+5
+      if (action.itemId === 'aviator_glasses') {
+        const s = { ...newState.stats, clarity: clamp(newState.stats.clarity + 5) };
+        newState = { ...newState, stats: s };
+      }
+      // E4 truck favor
+      if (action.itemId === 'e4_truck_favor') {
+        newState = { ...newState, e4FavorUsed: true };
+      }
+      return newState;
     }
     case 'SET_SCENARIO':
       return { ...state, scenario: action.scenario };
@@ -166,6 +222,33 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, streak: state.streak + 1 };
     case 'RESET_STREAK':
       return { ...state, streak: 0 };
+    // ─── New chaos actions ───
+    case 'ADD_CHAOS':
+      return { ...state, chaosMeter: Math.min(100, state.chaosMeter + action.amount) };
+    case 'REDUCE_CHAOS':
+      return { ...state, chaosMeter: Math.max(0, state.chaosMeter - action.amount) };
+    case 'RESET_CHAOS':
+      return { ...state, chaosMeter: 0 };
+    case 'SET_ACTIVE_COSMETIC':
+      return { ...state, activeCosmeticId: action.id };
+    case 'UNLOCK_PPT_BOSS':
+      return { ...state, pptBossUnlocked: true };
+    case 'DEFEAT_PPT_BOSS':
+      return { ...state, pptBossDefeated: true };
+    case 'ADD_CANDY':
+      return { ...state, candyCount: state.candyCount + action.amount };
+    case 'USE_CANDY':
+      return { ...state, candyCount: Math.max(0, state.candyCount - 1) };
+    case 'SNEDIGAR_HIT':
+      return { ...state, snedigarHits: state.snedigarHits + 1 };
+    case 'BASH_DEFEATED':
+      return { ...state, bashDefeated: true };
+    case 'USE_E4_FAVOR':
+      return { ...state, e4FavorUsed: true };
+    case 'ADD_STORE_ITEM': {
+      if (state.storeItemsBought.includes(action.itemId)) return state;
+      return { ...state, storeItemsBought: [...state.storeItemsBought, action.itemId] };
+    }
     default:
       return state;
   }

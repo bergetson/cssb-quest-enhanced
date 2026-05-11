@@ -1,8 +1,10 @@
 import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, MilCard, MilButton, GradeBadge, SectionTitle, Divider } from '../../components/GameUI';
 import { grade, gradeColor } from '../../lib/gameData';
+import { ChaosMeter } from '../../components/ChaosOverlay';
 
 const MISSIONS_COUNT = 10;
+const PASS_THRESHOLD = 0.70; // 70% required to unlock next mission
 
 export default function ResultScreen() {
   const { state, dispatch } = useGame();
@@ -16,14 +18,20 @@ export default function ResultScreen() {
   const isAAR = r.isAAR;
   const g = r.grade || (isAAR ? grade(r.missionScore || 0, r.max || 1) : '');
   const color = gradeColor(g);
-  const hasNext = (r.missionIndex ?? 0) < MISSIONS_COUNT - 1;
-  const nextIdx = (r.missionIndex ?? 0) + 1;
+  const missionIdx = r.missionIndex ?? 0;
+  const hasNext = missionIdx < MISSIONS_COUNT - 1;
+  const nextIdx = missionIdx + 1;
+
+  // 70% pass gate
+  const pct = r.max && r.max > 0 ? (r.missionScore || 0) / r.max : 0;
+  const passed = pct >= PASS_THRESHOLD;
+  const nextMissionLocked = !passed;
 
   const gradeMessages: Record<string, { title: string; msg: string }> = {
     GOLD:   { title: '🥇 GOLD — OUTSTANDING', msg: 'You tied facts to a commander decision. That is staff work. The 495 CSSB is the premier CSSB.' },
     SILVER: { title: '🥈 SILVER — PROFICIENT', msg: 'Solid staff work. A few gaps remain. Review the teaching points and replay for Gold.' },
-    BRONZE: { title: '🥉 BRONZE — MARGINAL', msg: 'You passed, but the commander noticed. Review the formulas and replay this mission.' },
-    FAILED: { title: '❌ FAILED — REMEDIATION REQUIRED', msg: 'Below standard. Return to the reference materials and replay. The staff depends on you.' },
+    BRONZE: { title: '🥉 BRONZE — MARGINAL', msg: 'You passed the 70% threshold. But the commander noticed. Review the formulas and replay for Silver.' },
+    FAILED: { title: '❌ FAILED — REMEDIATION REQUIRED', msg: 'Below 70%. Next mission is locked. Return to the reference materials and replay. The staff depends on you.' },
   };
 
   const gMsg = gradeMessages[g] || gradeMessages.FAILED;
@@ -49,16 +57,29 @@ export default function ResultScreen() {
                 {r.result}
               </div>
 
-              <div className={`${g === 'GOLD' || g === 'SILVER' ? 'success-box' : g === 'BRONZE' ? 'warn-box' : 'danger-box'}`}>
-                <div className="font-bold mb-1 text-xs" style={{ fontFamily: 'Rajdhani, sans-serif' }}>AAR TEACHING POINT</div>
-                <p className="text-xs">{gMsg.msg}</p>
-              </div>
+              {/* Pass/Fail gate message */}
+              {passed ? (
+                <div className="success-box mb-4">
+                  <div className="font-bold mb-1 text-xs" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                    ✓ MISSION PASSED ({Math.round(pct * 100)}% — threshold: 70%)
+                  </div>
+                  <p className="text-xs">{gMsg.msg}</p>
+                </div>
+              ) : (
+                <div className="danger-box mb-4">
+                  <div className="font-bold mb-1 text-xs" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                    ✗ MISSION FAILED ({Math.round(pct * 100)}% — need 70% to advance)
+                  </div>
+                  <p className="text-xs">{gMsg.msg}</p>
+                  <p className="text-xs mt-2 text-red-300 font-bold">Next mission remains LOCKED until you score 70% or higher.</p>
+                </div>
+              )}
             </div>
 
             {/* Stats */}
-            <div className="mil-card p-4 mb-6">
+            <div className="mil-card p-4 mb-4">
               <div className="text-xs text-slate-500 mono mb-3">// CAMPAIGN STATUS</div>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-4 text-center mb-4">
                 <div>
                   <div className="text-2xl font-black text-yellow-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{r.missionScore || 0}</div>
                   <div className="text-[10px] text-slate-500 mono">MISSION SCORE</div>
@@ -72,6 +93,8 @@ export default function ResultScreen() {
                   <div className="text-[10px] text-slate-500 mono">MISSIONS DONE</div>
                 </div>
               </div>
+              {/* Chaos meter */}
+              <ChaosMeter value={state.chaosMeter} />
             </div>
 
             <Divider />
@@ -82,7 +105,7 @@ export default function ResultScreen() {
                 <MilButton color="gold" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'hub' })}>
                   ← RETURN TO HUB
                 </MilButton>
-                {hasNext && (
+                {hasNext && !nextMissionLocked && (
                   <MilButton color="cyan" className="w-full" onClick={() => {
                     dispatch({ type: 'INIT_MISSION', missionIndex: nextIdx });
                     dispatch({ type: 'SET_SCREEN', screen: 'mission' });
@@ -90,12 +113,20 @@ export default function ResultScreen() {
                     NEXT MISSION →
                   </MilButton>
                 )}
+                {hasNext && nextMissionLocked && (
+                  <div className="flex items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+                    <span className="text-xs text-red-400 mono text-center">🔒 LOCKED — Score 70%+ to unlock</span>
+                  </div>
+                )}
               </div>
               <MilButton className="w-full" onClick={() => {
                 dispatch({ type: 'INIT_MISSION', missionIndex: r.missionIndex ?? 0 });
                 dispatch({ type: 'SET_SCREEN', screen: 'mission' });
               }}>
                 🔄 REPLAY MISSION
+              </MilButton>
+              <MilButton className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'achievements' })}>
+                🏆 VIEW ACHIEVEMENTS
               </MilButton>
             </div>
           </>

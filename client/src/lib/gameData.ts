@@ -10,7 +10,8 @@ export type Difficulty = 'crawl' | 'walk' | 'run' | 'nightmare' | 'qual';
 export type Screen =
   | 'title' | 'register' | 'hub' | 'mission' | 'result' | 'store'
   | 'notebook' | 'certificate' | 'secret' | 'roles' | 'ref'
-  | 'calc' | 'daily' | 'minigame' | 'leaderboard' | 'settings';
+  | 'calc' | 'daily' | 'minigame' | 'leaderboard' | 'settings'
+  | 'ppt_boss' | 'achievements' | 'inventory' | 'dorval_call';
 
 export interface Player {
   rank: string;
@@ -61,6 +62,23 @@ export interface InventoryItem {
   qty: number;
 }
 
+export interface Achievement {
+  id: string;
+  name: string;
+  desc: string;
+  emoji: string;
+  earnedAt: number;
+}
+
+export interface ChaosEvent {
+  id: string;
+  name: string;
+  desc: string;
+  emoji: string;
+  effect: 'chaos+10' | 'chaos+15' | 'chaos+20' | 'xp-10' | 'creds-15' | 'time-5' | 'skip' | 'bonus';
+  chaosThreshold: number; // minimum chaos level to trigger
+}
+
 export interface GameState {
   screen: Screen;
   player: Player | null;
@@ -78,6 +96,13 @@ export interface GameState {
   inventory: Record<string, number>;
   missions: Record<string, MissionRecord>;
   scores: Record<string, number>;
+  achievements: Record<string, Achievement>;
+  chaosMeter: number; // 0-100
+  activeCosmeticId: string | null;
+  pptBossUnlocked: boolean;
+  pptBossDefeated: boolean;
+  candyCount: number;
+  storeItemsBought: string[];
   completed: Record<string, boolean>;
   notebook: NotebookEntry[];
   badges: Record<string, Badge>;
@@ -103,6 +128,9 @@ export interface GameState {
   totalPlayTime: number;
   sessionStart: number;
   questionPool: Record<string, number[]>; // tracks which questions have been used
+  bashDefeated: boolean;
+  snedigarHits: number; // how many times Snedigar has run over the player
+  e4FavorUsed: boolean;
 }
 
 export interface ResultData {
@@ -151,6 +179,13 @@ export interface Scenario {
   lmtv: number;
   hmmwv: number;
   fueler: number;
+  // Vehicle fleet totals
+  hemtt: number;
+  lmtvTotal: number;
+  plsTotal: number;
+  hmmwvTotal: number;
+  fuelersTotal: number;
+  nmcCount: number;
 }
 
 function hashStr(s: string): number {
@@ -206,6 +241,13 @@ export function makeScenario(code: string): Scenario {
     ammoBoost, waterRate: 3.5, mealRate: 3, mealsPerCase: 12, casesPerPallet: 48,
     waterReserve: 0.15, fuelReserve: 0.20, ammoReserve: 0.10,
     plss: 3, lmtv: 2, hmmwv: 1, fueler: 1,
+  // Vehicle fleet for scenario
+  hemtt: pick(r, [2, 3, 4]),
+  lmtvTotal: pick(r, [4, 5, 6]),
+  plsTotal: pick(r, [3, 4, 5]),
+  hmmwvTotal: pick(r, [6, 8, 10]),
+  fuelersTotal: pick(r, [2, 3]),
+  nmcCount: pick(r, [1, 2, 3]),
   };
 }
 
@@ -465,6 +507,180 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'secret', speaker: 'gibson',
     speakerLine: 'MG Gibson: "Outstanding. Brief me on how you did it."',
   },
+  // ── Cosmetics ──
+  {
+    id: 'beret', name: 'Tactical Beret', desc: 'Cosmetic. Morale improves when worn.',
+    flavor: 'Slightly tilted. Regulation enough.',
+    cost: 30, emoji: '🎩', color: 'green', effect: 'cosmetic',
+    category: 'cosmetic', speaker: 'csm',
+    speakerLine: 'CSM Good: "That beret is not properly bloused. Fix it. ...Actually, it looks fine."',
+  },
+  {
+    id: 'coffee_mug', name: 'Personalized Coffee Mug', desc: 'Cosmetic. Boosts morale by 5.',
+    flavor: 'World\'s Okayest Staff Officer.',
+    cost: 25, emoji: '☕', color: 'orange', effect: 'cosmetic',
+    category: 'cosmetic', speaker: 'xo',
+    speakerLine: 'MAJ Pancheau: "Is that a personalized mug? In the TOC? ...I respect it."',
+  },
+  {
+    id: 'whiteboard_marker', name: 'Tactical Whiteboard Marker', desc: 'Cosmetic. Never runs out of ink.',
+    flavor: 'Guaranteed to work until it doesn\'t.',
+    cost: 20, emoji: '✏️', color: 'cyan', effect: 'cosmetic',
+    category: 'cosmetic', speaker: 's3',
+    speakerLine: 'CPT Whitehead: "A marker that works? In this TOC? Revolutionary."',
+  },
+  {
+    id: 'funny_hat', name: 'Unauthorized Funny Hat', desc: 'Cosmetic. LTC Figarelle will comment.',
+    flavor: 'Technically not in AR 670-1. Technically.',
+    cost: 35, emoji: '🎭', color: 'purple', effect: 'cosmetic',
+    category: 'cosmetic', speaker: 'bc',
+    speakerLine: 'LTC Figarelle: "That hat represents a stratification of risk to your career progression."',
+  },
+  {
+    id: 'iron_man_mustache', name: 'Iron Man Mustache', desc: 'Cosmetic. CPT Berget will notice.',
+    flavor: 'Genius. Billionaire. Staff Officer.',
+    cost: 45, emoji: '🥸', color: 'red', effect: 'cosmetic',
+    category: 'cosmetic', speaker: 's4',
+    speakerLine: 'CPT Berget: "Nice mustache. Very handsome. Almost as handsome as me."',
+  },
+  {
+    id: 'aviator_glasses', name: 'Aviator Glasses', desc: 'Cosmetic. +5 Clarity. You look the part.',
+    flavor: 'For the logistician who thinks they\'re a pilot.',
+    cost: 40, emoji: '🕶️', color: 'gold', effect: 'cosmetic',
+    category: 'cosmetic', speaker: 's2',
+    speakerLine: 'LT Gary: "Those glasses won\'t help you read the weather forecast any better."',
+  },
+  {
+    id: 'tornado', name: 'Shopette Tornado', desc: 'Chaos item. Increases chaos meter but gives +30 XP.',
+    flavor: 'SPC Morgan and SGT Kimball love these things.',
+    cost: 55, emoji: '🌪️', color: 'red', effect: 'chaos+20,xp+30',
+    category: 'consumable', speaker: 'snedigar',
+    speakerLine: 'PVT Snedigar: "I got three of these from the shopette. SPC Morgan showed me."',
+  },
+  // ── Special ──
+  {
+    id: 'dorval_phone_call', name: 'BG Dorval\'s Direct Line', desc: 'Call BG Dorval and give her a piece of your mind.',
+    flavor: 'She answers on the second ring. Are you sure about this?',
+    cost: 200, emoji: '☎️', color: 'cyan', effect: 'dorval_call',
+    category: 'secret', speaker: 'dorval',
+    speakerLine: 'BG Dorval: "...Hello?"',
+  },
+  {
+    id: 'e4_truck_favor', name: 'E4 Mafia Truck Favor', desc: 'Make one NMC truck FMC. No questions asked.',
+    flavor: 'They know a guy. The guy knows a part. The part appears.',
+    cost: 300, emoji: '🔧', color: 'lime', effect: 'e4FavorTruck',
+    category: 'powerup', speaker: 'ray',
+    speakerLine: 'SFC Ray: "Don\'t ask where the part came from. Just sign the 2404."',
+  },
+  {
+    id: 'ray_favor', name: 'SFC Ray\'s Favor', desc: 'Ray saves you from one wrong answer — automatically.',
+    flavor: '"The secret ingredient is crime." — SFC Ray',
+    cost: 90, emoji: '🕶️', color: 'purple', effect: 'rayCard+1',
+    category: 'powerup', speaker: 'ray',
+    speakerLine: 'SFC Ray: "I wasn\'t here. This never happened. You\'re welcome."',
+  },
+];
+
+// ─── Chaos Events ────────────────────────────────────────────────────────────
+
+export const CHAOS_EVENTS: ChaosEvent[] = [
+  {
+    id: 'snedigar_run', name: 'PVT Snedigar Runs You Over',
+    desc: 'PVT Snedigar charges through the TOC on a frisbee run and absolutely flattens you. You lose your train of thought.',
+    emoji: '🛒', effect: 'xp-10', chaosThreshold: 0,
+  },
+  {
+    id: 'marker_dry', name: 'Whiteboard Marker Runs Out',
+    desc: 'Mid-brief, your marker dies. You try three more. All dry. The plan is half-written on the board.',
+    emoji: '🖊️', effect: 'time-5', chaosThreshold: 10,
+  },
+  {
+    id: 'fragord_interrupt', name: 'FRAGORD RECEIVED',
+    desc: 'A FRAGORD just dropped. Higher changed the H-Hour. Again. Your timeline is now a work of fiction.',
+    emoji: '📨', effect: 'chaos+10', chaosThreshold: 15,
+  },
+  {
+    id: 'printer_jam', name: 'Printer Jams',
+    desc: 'The TOC printer jams on page 1 of a 47-page OPORD. The S3 is watching.',
+    emoji: '🖨️', effect: 'time-5', chaosThreshold: 20,
+  },
+  {
+    id: 'meeting_scheduled', name: 'Mandatory Meeting Scheduled',
+    desc: 'Someone just scheduled a 2-hour sync during your planning window. Attendance is mandatory.',
+    emoji: '📅', effect: 'chaos+10', chaosThreshold: 25,
+  },
+  {
+    id: 'redbull_crash', name: 'Red Bull Crash',
+    desc: 'The Red Bull wore off. You stare at the LOGSTAT like it\'s written in ancient Sumerian.',
+    emoji: '💤', effect: 'chaos+15', chaosThreshold: 30,
+  },
+  {
+    id: 'ppt_interrupt', name: 'CPT PowerPoint Appears',
+    desc: 'CPT PowerPoint bursts in with a 47-slide deck. "Just one quick brief," he says. It is never quick.',
+    emoji: '📊', effect: 'chaos+15', chaosThreshold: 35,
+  },
+  {
+    id: 'gibson_visit', name: 'BG Gibson Walks In',
+    desc: 'BG Gibson enters the TOC unannounced. "Be brilliant at the basics, people." Everyone stands a little straighter.',
+    emoji: '⭐', effect: 'bonus', chaosThreshold: 0,
+  },
+  {
+    id: 'moreni_visit', name: 'GEN Moreni Stops By',
+    desc: 'GEN Moreni pauses at your workstation. "Every setback is a setup for a comeback. Keep pushing."',
+    emoji: '🌲', effect: 'bonus', chaosThreshold: 0,
+  },
+  {
+    id: 'comms_down', name: 'Comms Are Down',
+    desc: 'Primary comms just went black. LT Drinville is "working on it." The PACE plan is being tested.',
+    emoji: '📡', effect: 'chaos+10', chaosThreshold: 20,
+  },
+  {
+    id: 'nmc_spike', name: 'Vehicle Goes NMC',
+    desc: 'Another truck just went NMC. The motor pool says parts are on order. ETA: unknown.',
+    emoji: '🔧', effect: 'chaos+10', chaosThreshold: 15,
+  },
+  {
+    id: 'weather_change', name: 'Weather Changes',
+    desc: 'LT Gary\'s weather forecast was wrong. Again. The rain line arrived 4 hours early.',
+    emoji: '🌧️', effect: 'time-5', chaosThreshold: 10,
+  },
+  {
+    id: 'csm_stare', name: 'CSM Good Gives You The Look',
+    desc: 'CSM Good walks by, stops, stares at your work for 10 full seconds, says nothing, and walks away.',
+    emoji: '🫡', effect: 'chaos+15', chaosThreshold: 40,
+  },
+  {
+    id: 'e4_saves', name: 'E4 Mafia Intervenes',
+    desc: 'Out of nowhere, a specialist appears, fixes your truck, and vanishes. No explanation given.',
+    emoji: '🤝', effect: 'bonus', chaosThreshold: 0,
+  },
+  {
+    id: 'bailey_candy', name: 'SFC Bailey Walks By',
+    desc: 'SFC Bailey passes through the S1 section. You find a piece of candy on your desk. No one saw anything.',
+    emoji: '🍬', effect: 'bonus', chaosThreshold: 0,
+  },
+];
+
+// ─── Achievements Definitions ─────────────────────────────────────────────────
+
+export const ACHIEVEMENTS_DEF: { id: string; name: string; desc: string; emoji: string; condition: string }[] = [
+  { id: 'first_mission', name: 'First Step', desc: 'Complete your first mission.', emoji: '🎖️', condition: 'Complete Mission 1' },
+  { id: 'all_missions', name: 'Staff Qualified', desc: 'Complete all 10 missions.', emoji: '🏆', condition: 'Complete all 10 missions' },
+  { id: 'all_gold', name: 'Gold Standard', desc: 'Earn GOLD on all 10 missions.', emoji: '🥇', condition: 'Score 90%+ on all missions' },
+  { id: 'hard_complete', name: 'No Mercy', desc: 'Complete all missions on HARD difficulty.', emoji: '💀', condition: 'Finish all missions on HARD' },
+  { id: 'dorval_call', name: 'Gave the A-Tag a Piece of My Mind', desc: 'Chickened out of calling BG Dorval.', emoji: '☎️', condition: 'Buy the Dorval phone and chicken out' },
+  { id: 'snedigar_3x', name: 'Roadkill', desc: 'Get run over by PVT Snedigar 3 times.', emoji: '🛒', condition: 'Trigger the Snedigar chaos event 3 times' },
+  { id: 'buy_all', name: 'Supply Depot Regular', desc: 'Buy every item in the store.', emoji: '🏪', condition: 'Purchase all shop items' },
+  { id: 'beat_bash', name: 'Beating Bash at Chess', desc: 'Defeated SSG Bash at the resource battle.', emoji: '♟️', condition: 'Win the Bash resource battle' },
+  { id: 'beat_ppt', name: 'Death to Slides', desc: 'Defeated CPT PowerPoint in battle.', emoji: '📊', condition: 'Win the CPT PowerPoint boss battle' },
+  { id: 'secret_phrase', name: 'Premier CSSB', desc: 'Discovered the secret phrase.', emoji: '🔒', condition: 'Buy the classified item' },
+  { id: 'candy_collector', name: 'Sweet Tooth', desc: 'Collected 5 pieces of candy.', emoji: '🍬', condition: 'Accumulate 5 candies' },
+  { id: 'ray_save', name: "Ray's Got You", desc: 'SFC Ray saved you from a wrong answer.', emoji: '🕶️', condition: 'Use a Ray Save Card' },
+  { id: 'chaos_max', name: 'Absolute Chaos', desc: 'Hit 100% chaos meter.', emoji: '🌪️', condition: 'Fill the chaos meter completely' },
+  { id: 'daily_streak', name: 'Battle Rhythm', desc: 'Complete 5 daily challenges.', emoji: '📅', condition: 'Complete 5 daily challenges' },
+  { id: 'perfect_mission', name: 'No Errors', desc: 'Complete a mission with a perfect score.', emoji: '⭐', condition: 'Score 100% on any mission' },
+  { id: 'e4_mafia', name: 'Connected', desc: 'Used the E4 Mafia favor.', emoji: '🤝', condition: 'Use the E4 Mafia truck fix' },
+  { id: 'gibson_blessed', name: 'Brilliant at the Basics', desc: 'BG Gibson visited during a chaos event.', emoji: '⭐', condition: 'Trigger the Gibson chaos event' },
 ];
 
 // ─── Question Banks (rotating) ────────────────────────────────────────────────
@@ -1113,6 +1329,16 @@ export function baseState(): GameState {
     totalPlayTime: 0,
     sessionStart: Date.now(),
     questionPool: {},
+    achievements: {},
+    chaosMeter: 0,
+    activeCosmeticId: null,
+    pptBossUnlocked: false,
+    pptBossDefeated: false,
+    candyCount: 0,
+    storeItemsBought: [],
+    bashDefeated: false,
+    snedigarHits: 0,
+    e4FavorUsed: false,
   };
 }
 

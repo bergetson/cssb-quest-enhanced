@@ -8,6 +8,9 @@ import {
   grade, parseNum, fmtN, ceilN, type Scenario,
 } from '../../lib/gameData';
 import { toast } from 'sonner';
+import { useState as useChaosState } from 'react';
+import { ChaosOverlay, AchievementToast, useChaosTrigger, ChaosMeter } from '../../components/ChaosOverlay';
+import type { ChaosEvent } from '../../lib/gameData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -472,6 +475,19 @@ export default function MissionScreen() {
   const [choiceResult, setChoiceResult] = useState<{ choice: Choice; index: number } | null>(null);
   const [missionScore, setMissionScore] = useState(state.scores[mission?.id] || 0);
   const inputRef = useRef<HTMLDivElement>(null);
+  const [activeChaosEvent, setActiveChaosEvent] = useState<ChaosEvent | null>(null);
+  const [pendingAchievement, setPendingAchievement] = useState<{ name: string; emoji: string; desc: string } | null>(null);
+  const { shouldTrigger, getRandomEvent } = useChaosTrigger(state.chaosMeter, false);
+
+  // Cosmetic comments
+  const COSMETIC_COMMENTS: Record<string, string> = {
+    iron_man_mustache: '"Looking sharp, soldier. Very Stark." — CPT Berget',
+    funny_hat: '"The stratification of risk inherent in that headgear is... considerable." — LTC Figarelli',
+    aviator_glasses: '"You look like a pilot. You are not a pilot." — SGM',
+    beret: '"Now THAT is a beret. Morale improved." — Staff',
+    coffee_mug: '"Morale improved. Carry on." — Everyone',
+    whiteboard_marker: '"Does it have ink? Please tell me it has ink." — S3',
+  };
 
   useEffect(() => {
     setInputValues({});
@@ -498,18 +514,49 @@ export default function MissionScreen() {
     setChoiceResult({ choice, index: idx });
 
     const score = Math.max(0, choice.score);
-dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: step.score || 20 });
-        dispatch({ type: 'APPLY_EFFECTS', effects: choice.effects as any });
+    dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: step.score || 20 });
+    dispatch({ type: 'APPLY_EFFECTS', effects: choice.effects as any });
     dispatch({ type: 'SPEND_TIME', minutes: 4 });
     setMissionScore(prev => prev + score);
 
     if (choice.correct) {
       dispatch({ type: 'ADD_STREAK' });
       dispatch({ type: 'ADD_XP', amount: 15 });
+      // Reduce chaos slightly on correct answer
+      dispatch({ type: 'REDUCE_CHAOS', amount: 3 });
       toast.success('Correct! +' + score + ' pts');
     } else {
       dispatch({ type: 'RESET_STREAK' });
+      // Wrong answer increases chaos
+      const chaosAdd = diff.hard ? 15 : 10;
+      dispatch({ type: 'ADD_CHAOS', amount: chaosAdd });
       if (choice.score < 0) toast.error('Wrong call. ' + choice.result);
+      // Maybe trigger chaos event
+      if (shouldTrigger(30)) {
+        const evt = getRandomEvent();
+        if (evt) {
+          setTimeout(() => setActiveChaosEvent(evt), 800);
+          // Apply chaos event effect
+          if (evt.effect === 'xp-10') dispatch({ type: 'ADD_XP', amount: -10 });
+          if (evt.effect === 'creds-15') dispatch({ type: 'SPEND_CREDS', amount: 15 });
+          if (evt.effect === 'time-5') dispatch({ type: 'SPEND_TIME', minutes: 5 });
+          if (evt.effect === 'chaos+10') dispatch({ type: 'ADD_CHAOS', amount: 10 });
+          if (evt.effect === 'chaos+15') dispatch({ type: 'ADD_CHAOS', amount: 15 });
+          if (evt.effect === 'chaos+20') dispatch({ type: 'ADD_CHAOS', amount: 20 });
+          // Snedigar hit is handled in ChaosOverlay via event id
+        }
+      }
+    }
+
+    // SFC Ray saves wrong answer
+    if (!choice.correct && state.rayCards > 0 && !diff.noSaves) {
+      dispatch({ type: 'USE_ITEM', itemId: 'ray_card' });
+      toast.info('🕶️ SFC Ray walks in and quietly gives you the right answer. "The secret ingredient is crime."');
+    }
+
+    // Cosmetic comment
+    if (state.activeCosmeticId && COSMETIC_COMMENTS[state.activeCosmeticId] && Math.random() < 0.3) {
+      toast.info(COSMETIC_COMMENTS[state.activeCosmeticId]);
     }
 
     dispatch({ type: 'ADD_NOTEBOOK', title: `${mission.name} — ${step.loc}`, text: `Choice: ${choice.text}\nResult: ${choice.result}\nLesson: ${choice.learn}` });
@@ -618,6 +665,20 @@ dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: step.sc
 
   return (
     <ScreenWrap>
+      {/* Chaos Event Overlay */}
+      {activeChaosEvent && (
+        <ChaosOverlay
+          event={activeChaosEvent}
+          onDismiss={() => setActiveChaosEvent(null)}
+        />
+      )}
+      {/* Achievement Toast */}
+      {pendingAchievement && (
+        <AchievementToast
+          achievement={pendingAchievement}
+          onDismiss={() => setPendingAchievement(null)}
+        />
+      )}
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Mission Header */}
         <div className="flex items-center gap-3 mb-4">
@@ -639,7 +700,60 @@ dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: step.sc
               <MilTag color="cyan">STEP {state.stepIndex + 1}</MilTag>
             </div>
           </div>
+          {/* Chaos meter inline */}
+          <div className="mt-2">
+            <ChaosMeter value={state.chaosMeter} />
+          </div>
         </div>
+
+        {/* Vehicle & Scenario Data Panel (always visible for reference) */}
+        <details className="mb-4">
+          <summary className="text-xs text-cyan-400/70 mono cursor-pointer hover:text-cyan-400 transition-colors">
+            📊 SCENARIO DATA (click to expand for reference)
+          </summary>
+          <div className="mt-2 bg-slate-900/60 border border-cyan-500/20 rounded-xl p-4 text-xs">
+            <div className="text-[10px] text-cyan-400/60 mono tracking-widest mb-3">// ACTIVE SCENARIO: {s.code}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+              <div><div className="text-slate-600 mono text-[10px]">PERSONNEL</div><div className="text-cyan-300 mono font-bold">{s.personnel}</div></div>
+              <div><div className="text-slate-600 mono text-[10px]">DURATION</div><div className="text-cyan-300 mono font-bold">{s.durationDays} days</div></div>
+              <div><div className="text-slate-600 mono text-[10px]">H-HOUR</div><div className="text-cyan-300 mono font-bold">{s.hHour}</div></div>
+              <div><div className="text-slate-600 mono text-[10px]">ONE-WAY DIST</div><div className="text-cyan-300 mono font-bold">{s.oneWay} mi</div></div>
+              <div><div className="text-slate-600 mono text-[10px]">TRIPS</div><div className="text-cyan-300 mono font-bold">{s.trips}</div></div>
+              <div><div className="text-slate-600 mono text-[10px]">ROUTE STATUS</div><div className="text-yellow-300 mono font-bold text-[10px]">{s.routeStatus}</div></div>
+            </div>
+            <div className="border-t border-slate-700 pt-3">
+              <div className="text-[10px] text-slate-500 mono mb-2">VEHICLE FLEET</div>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                <div className="bg-slate-800/60 rounded-lg p-2 text-center">
+                  <div className="text-white font-bold mono">{s.hemtt}</div>
+                  <div className="text-[9px] text-slate-500">HEMTT</div>
+                </div>
+                <div className="bg-slate-800/60 rounded-lg p-2 text-center">
+                  <div className="text-white font-bold mono">{s.lmtvTotal}</div>
+                  <div className="text-[9px] text-slate-500">LMTV</div>
+                </div>
+                <div className="bg-slate-800/60 rounded-lg p-2 text-center">
+                  <div className="text-white font-bold mono">{s.plsTotal}</div>
+                  <div className="text-[9px] text-slate-500">PLS</div>
+                </div>
+                <div className="bg-slate-800/60 rounded-lg p-2 text-center">
+                  <div className="text-white font-bold mono">{s.hmmwvTotal}</div>
+                  <div className="text-[9px] text-slate-500">HMMWV</div>
+                </div>
+                <div className="bg-slate-800/60 rounded-lg p-2 text-center">
+                  <div className="text-white font-bold mono">{s.fuelersTotal}</div>
+                  <div className="text-[9px] text-slate-500">FUELER</div>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] text-red-400 mono">NMC: {s.nmc}</span>
+                <span className="text-[10px] text-slate-600">|</span>
+                <span className="text-[10px] text-slate-500 mono">FMC Cargo: {s.fmcCargo} vehicles</span>
+                {state.e4FavorUsed && <span className="text-[10px] text-lime-400 mono">| E4 Mafia: +1 FMC</span>}
+              </div>
+            </div>
+          </div>
+        </details>
 
         {/* NPC Dialog */}
         <NPCDialog charId={step.speaker} text={step.text} location={step.loc} />
