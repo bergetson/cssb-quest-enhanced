@@ -439,10 +439,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'secret_phrase', name: '??? Classified Item', desc: 'Unlocks something. Maybe.',
-    flavor: 'The 495 CSSB is the premier CSSB.',
+    flavor: 'The truth Montana doesn\'t want you to know...',
     cost: 495, emoji: '🔒', color: 'gold', effect: 'secret=true',
     category: 'secret', speaker: 'bc',
-    speakerLine: 'LTC Figarelle: "The 495 CSSB is the premier CSSB."',
+    speakerLine: 'LTC Figarelle: "The truth Montana doesn\'t want you to know..."',
   },
   {
     id: 'moreni_blessing', name: 'GEN Moreni\'s Blessing', desc: '+20 to all stats for one mission',
