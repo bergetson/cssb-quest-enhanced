@@ -69,6 +69,7 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
         {
           kind: 'choice', speaker: 'xo', loc: 'BATTALION HQ — 0630',
           text: `495 CSSB has received a mission to support 1-163 Infantry during Operation Flathead Shield. H-hour is ${s.hHour}. The commander wants initial sustainment options fast. What is your FIRST action?`,
+          score: 12,
           choices: [
             ch('Ask for mission, timeline, commander priorities, and issue an initial WARNO.', 12, { clarity: 8, cmd: 4 }, 'You buy subordinate planning time and start the staff in the right direction.', 'Receipt of mission is about time, priorities, and immediate warning to subordinates.', true),
             ch('Start building slides immediately.', -6, { clarity: -7, chaos: 5 }, 'The slide looks nice. It answers almost nothing.', 'Pretty slides do not replace mission analysis.'),
@@ -90,6 +91,7 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
         {
           kind: 'choice', speaker: 'csm', loc: 'CSM CHECK',
           text: 'CSM Good asks what you are worried about before the first staff huddle.',
+          score: 12,
           choices: [
             ch('Bad assumptions: personnel count, route status, drivers, and water.', 12, { clarity: 7, readiness: 5 }, 'CSM nods. You identified what can break the plan early.', 'Assumptions deserve aggressive verification.', true),
             ch('Mostly whether the slides have enough graphics.', -6, { chaos: 6, cmd: -4 }, 'CPT PowerPoint smiles. Everyone else gets nervous.', 'Graphics support decisions. They do not make decisions.'),
@@ -745,10 +747,12 @@ export default function MissionScreen() {
                   <div className="text-[9px] text-slate-500">FUELER</div>
                 </div>
               </div>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] text-red-400 mono">NMC: {s.nmc}</span>
                 <span className="text-[10px] text-slate-600">|</span>
-                <span className="text-[10px] text-slate-500 mono">FMC Cargo: {s.fmcCargo} vehicles</span>
+                <span className="text-[10px] text-slate-500 mono">FMC Cargo: {s.fmcCargo}</span>
+                <span className="text-[10px] text-slate-600">|</span>
+                <span className="text-[10px] text-cyan-400 mono font-bold">Qualified Drivers: {s.driverAvail}</span>
                 {state.e4FavorUsed && <span className="text-[10px] text-lime-400 mono">| E4 Mafia: +1 FMC</span>}
               </div>
             </div>
