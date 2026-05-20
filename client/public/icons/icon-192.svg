@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="CSSB Quest">
+  <rect width="192" height="192" rx="36" fill="#0a0f1e"/>
+  <path d="M96 18 164 56v80l-68 38-68-38V56z" fill="#111827" stroke="#f5c842" stroke-width="6"/>
+  <path d="M96 38 144 65v58l-48 27-48-27V65z" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+  <text x="96" y="91" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="900" fill="#f5c842">495</text>
+  <text x="96" y="119" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#e5e7eb">CSSB</text>
+  <circle cx="96" cy="146" r="5" fill="#10b981"/>
+</svg>
