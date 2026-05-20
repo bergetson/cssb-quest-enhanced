@@ -13,7 +13,7 @@ import RefScreen from './screens/RefScreen';
 import CalcScreen from './screens/CalcScreen';
 import DailyScreen from './screens/DailyScreen';
 import MinigameScreen from './screens/MinigameScreen';
-import LeaderboardScreen from './screens/LeaderboardScreen';
+import LeaderboardScreen from './screens/LeaderboardScreenCodex';
 import PptBossScreen from './screens/PptBossScreen';
 import DorvalCallScreen from './screens/DorvalCallScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
