@@ -77,6 +77,8 @@
     font-family: 'Inter', sans-serif;
     background: radial-gradient(ellipse at 20% 10%, oklch(0.14 0.04 240) 0%, oklch(0.08 0.02 240) 40%, oklch(0.06 0.015 240) 100%);
     min-height: 100vh;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -280,7 +282,7 @@
     color: oklch(0.92 0.01 220);
     padding: 0.75rem 1rem;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.9rem;
+    font-size: 1rem;
     outline: none;
     transition: all 0.15s ease;
   }
@@ -448,6 +450,74 @@
   .animate-blink { animation: blink 1s steps(2, end) infinite; }
   .animate-spin-slow { animation: spin-slow 8s linear infinite; }
 
+  .expansion-grid {
+    background-image:
+      linear-gradient(oklch(0.72 0.14 200 / 10%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.72 0.14 200 / 10%) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(120deg, transparent, black 20%, black 70%, transparent);
+  }
+
+  .after-action-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .after-action-card::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(from 180deg, transparent, oklch(0.78 0.15 85 / 16%), transparent 35%);
+    animation: spin-slow 8s linear infinite;
+    pointer-events: none;
+  }
+  .after-action-card > * {
+    position: relative;
+  }
+  .after-action-pass {
+    animation: pulse-glow 1.8s ease-in-out 2;
+  }
+  .after-action-fail {
+    animation: shake 0.4s ease;
+  }
+
+  .asset-visual {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid oklch(1 0 0 / 10%);
+    background: oklch(0.07 0.015 240);
+  }
+  .asset-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .silhouette-img {
+    filter: brightness(0) contrast(1.35) drop-shadow(0 0 12px oklch(0.72 0.14 200 / 40%));
+    opacity: 0.95;
+  }
+  .asset-placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid oklch(0.72 0.14 200 / 24%);
+    background:
+      radial-gradient(circle at 50% 30%, oklch(0.72 0.14 200 / 18%), transparent 38%),
+      linear-gradient(135deg, oklch(0.08 0.02 240), oklch(0.12 0.03 210));
+  }
+  .asset-silhouette {
+    filter: grayscale(1) contrast(1.25);
+    background:
+      radial-gradient(circle at 50% 40%, oklch(0 0 0 / 70%), transparent 34%),
+      linear-gradient(135deg, oklch(0.08 0.02 240), oklch(0.14 0.02 240));
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: oklch(0.1 0.02 240); }
@@ -487,6 +557,39 @@
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
     display: grid;
     gap: 0.5rem;
+  }
+
+  @media (max-width: 480px) {
+    .mil-card {
+      border-radius: 0.75rem;
+      box-shadow: 0 14px 36px oklch(0 0 0 / 36%), inset 0 1px 0 oklch(1 0 0 / 6%);
+    }
+    .btn-mil {
+      min-height: 48px;
+      padding: 0.7rem 0.95rem;
+      border-radius: 0.7rem;
+      letter-spacing: 0.04em;
+    }
+    .choice-btn {
+      min-height: 52px;
+      padding: 0.9rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .npc-portrait {
+      width: 48px;
+      height: 48px;
+      border-radius: 0.75rem;
+      font-size: 1.25rem;
+    }
+    .topbar {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    .stat-pill {
+      padding: 0.3rem 0.55rem;
+      font-size: 0.65rem;
+    }
   }
 
   /* Topbar */
