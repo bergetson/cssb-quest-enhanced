@@ -4,6 +4,7 @@ import {
   StatBar, XPBar, StreakBadge, Divider,
 } from '../../components/GameUI';
 import { DIFFS } from '../../lib/gameData';
+import { calculateCampaignScore } from '../../lib/leaderboard';
 import { ChaosMeter } from '../../components/ChaosOverlay';
 
 const MISSIONS = [
@@ -20,6 +21,11 @@ const MISSIONS = [
 ];
 
 const TOOLS = [
+  { id: 'warrior',     label: 'WARRIOR TASK ARCADE', icon: 'WT', color: 'green',  desc: 'MEDEVAC, SALUTE, MARCH, convoy drills & halt security' },
+  { id: 'opfor',       label: 'OPFOR RECOGNITION',   icon: 'ID', color: 'red',    desc: 'Asset flashcards, silhouettes, reports & recognition library' },
+  { id: 'dsca',        label: 'DSCA MISSIONS',       icon: 'DS', color: 'cyan',   desc: 'Wildfire, flood, SAR, shelter, water & road support missions' },
+  { id: 'convoy',      label: 'CONVOY PLANNER',      icon: 'CV', color: 'orange', desc: 'Build convoy plans, brief risk, execute through friction' },
+  { id: 'new_soldier', label: 'NEW SOLDIER PATH',    icon: 'NS', color: 'purple', desc: 'Interactive onboarding for unit basics, staff, reports & field habits' },
   { id: 'daily',       label: 'DAILY CHALLENGE', icon: '📅', color: 'gold',   desc: 'New question every day. Bonus XP.' },
   { id: 'store',       label: 'SUPPLY DEPOT',    icon: '🏪', color: 'orange', desc: 'Spend credits on power-ups & items' },
   { id: 'ref',         label: 'REFERENCE',       icon: '📚', color: 'cyan',   desc: 'MDMP, doctrine, classes of supply' },
@@ -44,6 +50,7 @@ export default function HubScreen() {
   const completedCount = Object.keys(state.completed).length;
   const totalMissions = MISSIONS.length;
   const overallPct = Math.round((completedCount / totalMissions) * 100);
+  const campaignScore = calculateCampaignScore(state);
 
   function startMission(index: number) {
     dispatch({ type: 'INIT_MISSION', missionIndex: index });
@@ -84,6 +91,7 @@ export default function HubScreen() {
                 <span className="text-xs text-slate-500 mono">{completedCount}/{totalMissions} missions complete</span>
                 <span className="text-xs text-yellow-400 mono font-bold">💰 {state.creds} CR</span>
                 <span className="text-xs text-cyan-400 mono">⚡ LVL {state.level}</span>
+                <span className="text-xs text-emerald-400 mono">🏆 {campaignScore.total} BOARD PTS</span>
               </div>
             </div>
             <div className="min-w-[200px]">
