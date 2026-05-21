@@ -11,7 +11,8 @@ export type Screen =
   | 'title' | 'register' | 'hub' | 'mission' | 'result' | 'store'
   | 'notebook' | 'certificate' | 'secret' | 'roles' | 'ref'
   | 'calc' | 'daily' | 'minigame' | 'leaderboard' | 'settings'
-  | 'ppt_boss' | 'achievements' | 'inventory' | 'dorval_call';
+  | 'ppt_boss' | 'achievements' | 'inventory' | 'dorval_call'
+  | 'warrior' | 'opfor' | 'dsca' | 'convoy' | 'new_soldier';
 
 export interface Player {
   rank: string;
