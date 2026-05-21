@@ -17,6 +17,13 @@ import LeaderboardScreen from './screens/LeaderboardScreenCodex';
 import PptBossScreen from './screens/PptBossScreen';
 import DorvalCallScreen from './screens/DorvalCallScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
+import {
+  ConvoyPlannerScreen,
+  DscaMissionsScreen,
+  NewSoldierScreen,
+  OpforRecognitionScreen,
+  WarriorTaskArcadeScreen,
+} from './screens/ExpansionScreens';
 
 export default function GameShell() {
   const { state } = useGame();
@@ -40,6 +47,11 @@ export default function GameShell() {
     ppt_boss: <PptBossScreen />,
     dorval_call: <DorvalCallScreen />,
     achievements: <AchievementsScreen />,
+    warrior: <WarriorTaskArcadeScreen />,
+    opfor: <OpforRecognitionScreen />,
+    dsca: <DscaMissionsScreen />,
+    convoy: <ConvoyPlannerScreen />,
+    new_soldier: <NewSoldierScreen />,
     inventory: <StoreScreen />, // inventory tab within store
     settings: <HubScreen />,
   };
