@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import {
   ScreenWrap, MilCard, MilButton, NPCDialog, MilTag, GradeBadge, ProgressBar, Divider,
 } from '../../components/GameUI';
 import {
   DIFFS, CHARS, makeScenario, class1Vals, fuelVals, ammoVals, finalVals,
-  grade, parseNum, fmtN, ceilN, type Scenario,
+  grade, parseNum, fmtN, ceilN, passThresholdForDifficulty, type Scenario,
 } from '../../lib/gameData';
+import { missionCreditReward, shuffleWithSeed } from '../../lib/gameplayUtils';
 import { toast } from 'sonner';
 import { useState as useChaosState } from 'react';
 import { ChaosOverlay, AchievementToast, useChaosTrigger, ChaosMeter } from '../../components/ChaosOverlay';
@@ -461,6 +462,20 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
   ];
 }
 
+function getStepMax(step: Step) {
+  if (typeof step.score === 'number') return step.score;
+  if (step.choices?.length) {
+    const bestCorrect = Math.max(...step.choices.filter(c => c.correct).map(c => Math.max(0, c.score)), 0);
+    const bestAny = Math.max(...step.choices.map(c => Math.max(0, c.score)), 0);
+    return bestCorrect || bestAny;
+  }
+  return 0;
+}
+
+function getMissionMax(mission: { steps: Step[] }) {
+  return mission.steps.reduce((sum, st) => sum + getStepMax(st), 0);
+}
+
 // ─── Mission Screen Component ─────────────────────────────────────────────────
 
 export default function MissionScreen() {
@@ -498,6 +513,18 @@ export default function MissionScreen() {
     setChoiceResult(null);
   }, [state.missionIndex, state.stepIndex]);
 
+  useEffect(() => {
+    setMissionScore(state.scores[mission?.id] || 0);
+  }, [mission?.id, state.scores]);
+
+  const choiceAttempt = mission ? (state.missions[mission.id]?.attempts || 0) : 0;
+  const visibleChoices = useMemo(
+    () => step?.choices
+      ? shuffleWithSeed(step.choices, `${state.challenge}:${mission?.id}:${state.stepIndex}:${state.difficulty}:${choiceAttempt}`)
+      : [],
+    [choiceAttempt, mission?.id, state.challenge, state.difficulty, state.stepIndex, step],
+  );
+
   if (!mission || !step) {
     return (
       <ScreenWrap>
@@ -516,7 +543,7 @@ export default function MissionScreen() {
     setChoiceResult({ choice, index: idx });
 
     const score = Math.max(0, choice.score);
-    dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: step.score || 20 });
+    dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: getStepMax(step) });
     dispatch({ type: 'APPLY_EFFECTS', effects: choice.effects as any });
     dispatch({ type: 'SPEND_TIME', minutes: 4 });
     setMissionScore(prev => prev + score);
@@ -530,7 +557,7 @@ export default function MissionScreen() {
     } else {
       dispatch({ type: 'RESET_STREAK' });
       // Wrong answer increases chaos
-      const chaosAdd = diff.hard ? 15 : 10;
+      const chaosAdd = state.difficulty === 'nightmare' || state.difficulty === 'qual' ? 20 : diff.hard ? 15 : 10;
       dispatch({ type: 'ADD_CHAOS', amount: chaosAdd });
       if (choice.score < 0) toast.error('Wrong call. ' + choice.result);
       // Maybe trigger chaos event
@@ -612,7 +639,7 @@ export default function MissionScreen() {
     setInputResults(results);
     setSubmitted(true);
 
-    dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: step.score || 30 });
+    dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: getStepMax(step) });
 
     dispatch({ type: 'APPLY_EFFECTS', effects: pct === 1 ? { clarity: 8, readiness: 6, cmd: 3 } : pct >= 0.7 ? { clarity: 3, readiness: 1 } : { clarity: -8, readiness: -8, chaos: 8, cmd: -4 } });
     dispatch({ type: 'SPEND_TIME', minutes: 6 + step.fields.length * 2 });
@@ -626,6 +653,7 @@ export default function MissionScreen() {
       toast.info(`${correct}/${step.fields.length} correct. +${score} pts`);
     } else {
       dispatch({ type: 'RESET_STREAK' });
+      dispatch({ type: 'ADD_CHAOS', amount: state.difficulty === 'nightmare' || state.difficulty === 'qual' ? 18 : diff.hard ? 12 : 8 });
       toast.error(`${correct}/${step.fields.length} correct. Review the formulas.`);
     }
 
@@ -636,18 +664,46 @@ export default function MissionScreen() {
   function handleNext() {
     if (isLastStep) {
       // Complete mission
-      const finalScore = state.scores[mission.id] || 0;
-      const maxScore = mission.steps.reduce((sum, st) => sum + (st.score || (st.choices ? 20 : 0)), 0);
+      const finalScore = missionScore;
+      const maxScore = getMissionMax(mission);
+      const pct = maxScore > 0 ? finalScore / maxScore : 0;
+      const weightedPoints = Math.round(finalScore * diff.mult);
+      const creditsEarned = missionCreditReward(finalScore, diff.mult);
       dispatch({ type: 'COMPLETE_MISSION', missionId: mission.id, score: finalScore, max: maxScore });
-      dispatch({ type: 'ADD_CREDS', amount: Math.round(finalScore / 2) });
+      dispatch({ type: 'ADD_CREDS', amount: creditsEarned });
       dispatch({ type: 'ADD_XP', amount: 50 });
+      if (pct >= 1) {
+        dispatch({ type: 'ADD_ACHIEVEMENT', achievement: {
+          id: 'perfect_mission',
+          name: 'No Errors',
+          desc: 'Complete a mission with a perfect score.',
+          emoji: '⭐',
+          earnedAt: Date.now(),
+        }});
+        dispatch({ type: 'ADD_BADGE', badge: {
+          id: `perfect_${mission.id}`,
+          name: `${mission.name} Perfect`,
+          desc: 'Every decision and calculation was correct.',
+          emoji: '⭐',
+          earnedAt: Date.now(),
+        }});
+      }
+      if (mission.id === 'm10' && pct >= 0.9) {
+        dispatch({ type: 'ADD_ACHIEVEMENT', achievement: {
+          id: 'nightmare_final',
+          name: 'MDMP Nightmare Graduate',
+          desc: 'Earn Gold on the final MDMP qualification mission.',
+          emoji: '🏆',
+          earnedAt: Date.now(),
+        }});
+      }
       dispatch({ type: 'SET_LAST_RESULT', result: {
         title: 'MISSION AAR',
         isAAR: true,
         choice: mission.name,
-        result: `Score: ${finalScore}/${maxScore}\nGrade: ${grade(finalScore, maxScore)}\nCredits earned: ${Math.round(finalScore / 2)}`,
+        result: `Score: ${finalScore}/${maxScore}\nGrade: ${grade(finalScore, maxScore)}\nDifficulty: ${diff.name} x${diff.mult}\nPass gate: ${Math.round(passThresholdForDifficulty(state.difficulty) * 100)}%\nLeaderboard points: ${weightedPoints}\nCredits earned: ${creditsEarned}`,
         learn: grade(finalScore, maxScore) === 'GOLD'
-          ? 'You tied facts to a commander decision. That is staff work.'
+          ? 'You tied facts to a commander decision. That is staff work. The 495th CSSB is the premier CSSB.'
           : 'Replay to improve. Validate assumptions, do the math, and brief a recommendation.',
         score: finalScore,
         effects: {},
@@ -765,7 +821,7 @@ export default function MissionScreen() {
         {/* Difficulty hint */}
         {diff.hard && (
           <div className="warn-box mb-4">
-            ⚠️ {diff.name}: No hints. No saves. Think carefully.
+            ⚠️ {diff.name}: No formula hints. {diff.noSaves ? 'No save cards.' : 'Save cards still work.'} Use the scenario data and reference materials.
           </div>
         )}
 
@@ -773,7 +829,7 @@ export default function MissionScreen() {
         {step.kind === 'choice' && step.choices && (
           <div className="animate-fade-in-up">
             <div className="text-xs text-slate-600 mono mb-3">// SELECT YOUR ACTION</div>
-            {step.choices.map((c, i) => {
+            {visibleChoices.map((c, i) => {
               const isSelected = choiceResult?.index === i;
               const isCorrect = choiceResult && c.correct && choiceResult.index === i;
               const isWrong = choiceResult && choiceResult.index === i && !c.correct;
