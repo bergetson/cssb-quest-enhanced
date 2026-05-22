@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { MilButton, MilCard, ScreenWrap, SectionTitle } from '../../components/GameUI';
-import { DIFFS, type Difficulty } from '../../lib/gameData';
+import { DIFFS, generateChallengeCode, type Difficulty } from '../../lib/gameData';
 
 const RANKS = ['PVT', 'PFC', 'SPC', 'CPL', 'SGT', 'SSG', 'SFC', 'MSG', '1SG', 'SGM', 'CSM', '2LT', '1LT', 'CPT', 'MAJ', 'LTC', 'COL'];
 
@@ -21,7 +21,7 @@ export default function RegisterScreen() {
     dispatch({ type: 'SET_PLAYER', player: { rank, name: name.trim(), unit: unit.trim() || '495 CSSB' } });
     dispatch({ type: 'SET_DIFFICULTY', difficulty: diff });
     dispatch({ type: 'SET_CHALLENGE', challenge: challenge.trim() || 'MOOSE-495' });
-    dispatch({ type: 'SET_SCREEN', screen: 'hub' });
+    dispatch({ type: 'SET_SCREEN', screen: 'avatar' });
   }
 
   return (
@@ -81,13 +81,18 @@ export default function RegisterScreen() {
           <div className="text-xs text-cyan-400/80 mono tracking-widest mb-4">// SCENARIO CODE</div>
           <div>
             <label className="block text-xs text-slate-500 mb-2 mono">CHALLENGE CODE (changes scenario variables)</label>
-            <input
-              type="text"
-              value={challenge}
-              onChange={e => setChallenge(e.target.value.toUpperCase())}
-              placeholder="MOOSE-495"
-              className="mil-input"
-            />
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <input
+                type="text"
+                value={challenge}
+                onChange={e => setChallenge(e.target.value.toUpperCase())}
+                placeholder="MOOSE-495"
+                className="mil-input"
+              />
+              <MilButton color="cyan" onClick={() => setChallenge(generateChallengeCode())}>
+                NEW
+              </MilButton>
+            </div>
           </div>
           <p className="text-[10px] text-slate-600 mt-2">Different codes generate different personnel counts, distances, and scenarios. Share codes with your unit for standardized training.</p>
         </MilCard>
