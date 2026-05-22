@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import {
   GameState, loadState, saveState, baseState,
-  makeScenario, grade, levelFromXp, xpForLevel,
-  type Stats, type Badge, type ResultData, type Difficulty, type Achievement,
+  makeScenario, grade, levelFromXp, xpForLevel, DIFFS, passThresholdForDifficulty,
+  type Stats, type Badge, type ResultData, type Difficulty, type Achievement, type AvatarConfig,
 } from '../lib/gameData';
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -10,6 +10,7 @@ import {
 type Action =
   | { type: 'SET_SCREEN'; screen: GameState['screen'] }
   | { type: 'SET_PLAYER'; player: GameState['player'] }
+  | { type: 'SET_AVATAR'; avatar: AvatarConfig }
   | { type: 'SET_DIFFICULTY'; difficulty: Difficulty }
   | { type: 'SET_CHALLENGE'; challenge: string }
   | { type: 'APPLY_EFFECTS'; effects: Partial<Stats> }
@@ -63,6 +64,8 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, screen: action.screen };
     case 'SET_PLAYER':
       return { ...state, player: action.player };
+    case 'SET_AVATAR':
+      return { ...state, avatar: action.avatar };
     case 'SET_DIFFICULTY':
       return { ...state, difficulty: action.difficulty };
     case 'SET_CHALLENGE':
@@ -81,7 +84,7 @@ function reducer(state: GameState, action: Action): GameState {
     case 'SPEND_CREDS':
       return { ...state, creds: Math.max(0, state.creds - action.amount) };
     case 'ADD_XP': {
-      const newXp = state.xp + action.amount;
+      const newXp = Math.max(0, state.xp + action.amount);
       const newLevel = levelFromXp(newXp);
       return { ...state, xp: newXp, level: newLevel };
     }
@@ -124,13 +127,28 @@ function reducer(state: GameState, action: Action): GameState {
       const g = grade(action.score, action.max);
       const prev = state.missions[action.missionId];
       const attempts = (prev?.attempts || 0) + 1;
+      const points = Math.round(action.score * DIFFS[state.difficulty].mult);
+      const prevWithMeta = prev as (typeof prev & { points?: number; difficulty?: Difficulty }) | undefined;
+      const prevDifficulty = prevWithMeta?.difficulty || state.difficulty;
+      const prevPoints = prevWithMeta?.points ?? (prev ? Math.round(prev.score * DIFFS[prevDifficulty].mult) : -1);
+      const candidate = {
+        score: action.score,
+        max: action.max,
+        grade: g,
+        attempts,
+        difficulty: state.difficulty,
+        points,
+        completedAt: Date.now(),
+      };
+      const best: any = !prev || points >= prevPoints
+        ? candidate
+        : { ...prev, attempts };
       const missions = {
         ...state.missions,
-        [action.missionId]: { score: action.score, max: action.max, grade: g, attempts },
+        [action.missionId]: best,
       };
-      // Only mark completed if passed (70%+)
       const pct = action.max > 0 ? action.score / action.max : 0;
-      const passed = pct >= 0.70;
+      const passed = pct >= passThresholdForDifficulty(state.difficulty);
       const completed = passed
         ? { ...state.completed, [action.missionId]: true }
         : state.completed;
@@ -138,8 +156,11 @@ function reducer(state: GameState, action: Action): GameState {
     }
     case 'BUY_ITEM': {
       if (state.creds < action.cost) return state;
+      if (action.itemId === 'dorval_phone_call' && (state.storeItemsBought.includes(action.itemId) || state.achievements.dorval_call)) return state;
       const inventory = { ...state.inventory };
-      inventory[action.itemId] = (inventory[action.itemId] || 0) + 1;
+      if (action.itemId !== 'dorval_phone_call') {
+        inventory[action.itemId] = (inventory[action.itemId] || 0) + 1;
+      }
       let newState = { ...state, creds: state.creds - action.cost, inventory };
       // Track all bought items for achievements
       if (!newState.storeItemsBought.includes(action.itemId)) {
@@ -151,6 +172,16 @@ function reducer(state: GameState, action: Action): GameState {
       if (action.itemId === 'e4') newState = { ...newState, e4: true };
       if (action.itemId === 'secret_phrase') newState = { ...newState, secret: true };
       if (action.itemId === 'redbull') newState = { ...newState, redbull: newState.redbull + 4 };
+      if (action.itemId === 'battle_captain_hotline') {
+        newState = {
+          ...newState,
+          stats: {
+            ...newState.stats,
+            cmd: clamp(newState.stats.cmd + 10),
+            clarity: clamp(newState.stats.clarity + 10),
+          },
+        };
+      }
       // Tornado: chaos+20 but gives XP
       if (action.itemId === 'tornado') {
         newState = { ...newState, chaosMeter: Math.min(100, newState.chaosMeter + 20), xp: newState.xp + 30 };
@@ -159,13 +190,37 @@ function reducer(state: GameState, action: Action): GameState {
       if (action.itemId === 'dorval_phone_call') {
         newState = { ...newState, screen: 'dorval_call' };
       }
+      const itemAchievements: Record<string, Achievement> = {
+        tornado: { id: 'shopette_tornado', name: 'Questionable Nutrition', desc: 'Bought a Shopette Tornado on purpose.', emoji: '🌪️', earnedAt: Date.now() },
+        aviator_glasses: { id: 'aviator_energy', name: 'Logistics Aviator', desc: 'Equipped aviators for a job that does not involve flying.', emoji: '🕶️', earnedAt: Date.now() },
+        battle_captain_hotline: { id: 'battle_captain_hotline', name: 'BLUF Machine', desc: 'Bought the Battle Captain Hotline.', emoji: '☎️', earnedAt: Date.now() },
+      };
+      const earned = itemAchievements[action.itemId];
+      if (earned && !newState.achievements[earned.id]) {
+        newState = {
+          ...newState,
+          achievements: { ...newState.achievements, [earned.id]: earned },
+          log: [new Date().toLocaleTimeString() + ': Achievement: ' + earned.name, ...newState.log].slice(0, 80),
+        };
+      }
       return newState;
     }
     case 'USE_ITEM': {
       const inventory = { ...state.inventory };
-      if (!inventory[action.itemId]) return state;
-      inventory[action.itemId] = Math.max(0, inventory[action.itemId] - 1);
+      const linkedQty =
+        action.itemId === 'ray_card' ? state.rayCards :
+        action.itemId === 'mercy' ? state.mercyCards :
+        action.itemId === 'redbull' ? state.redbull :
+        action.itemId === 'candy' ? state.candyCount :
+        0;
+      if (!inventory[action.itemId] && linkedQty <= 0) return state;
+      if (inventory[action.itemId]) inventory[action.itemId] = Math.max(0, inventory[action.itemId] - 1);
+      else if (action.itemId === 'ray_card' && inventory.ray_favor) inventory.ray_favor = Math.max(0, inventory.ray_favor - 1);
       let newState = { ...state, inventory };
+      if (action.itemId === 'ray_card') newState = { ...newState, rayCards: Math.max(0, newState.rayCards - 1) };
+      if (action.itemId === 'mercy') newState = { ...newState, mercyCards: Math.max(0, newState.mercyCards - 1) };
+      if (action.itemId === 'redbull') newState = { ...newState, redbull: Math.max(0, newState.redbull - 1) };
+      if (action.itemId === 'candy') newState = { ...newState, candyCount: Math.max(0, newState.candyCount - 1) };
       // Cosmetics: set active cosmetic
       if (['beret','coffee_mug','whiteboard_marker','funny_hat','iron_man_mustache','aviator_glasses'].includes(action.itemId)) {
         newState = { ...newState, activeCosmeticId: action.itemId };
@@ -281,9 +336,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const getScenario = useCallback(() => {
     if (state.scenario) return state.scenario;
-    const s = makeScenario(state.challenge);
-    dispatch({ type: 'SET_SCENARIO', scenario: s });
-    return s;
+    return makeScenario(state.challenge);
   }, [state.scenario, state.challenge]);
 
   return (
