@@ -1,10 +1,11 @@
 // Design: Modern Military Command Dashboard
 // Captain PowerPoint Boss Battle — turn-based doctrine quiz combat
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '@/contexts/GameContext';
 import { ACHIEVEMENTS_DEF } from '@/lib/gameData';
+import { minigameCreditReward, shuffleWithSeed } from '@/lib/gameplayUtils';
 
 interface BossQuestion {
   id: string;
@@ -100,11 +101,15 @@ export default function PptBossScreen() {
   const [turn, setTurn] = useState(0);
 
   const currentQ = BOSS_QUESTIONS[currentQIdx % BOSS_QUESTIONS.length];
+  const visibleChoices = useMemo(
+    () => shuffleWithSeed(currentQ.choices, `ppt:${state.challenge}:${currentQ.id}:${turn}`),
+    [currentQ, state.challenge, turn],
+  );
 
   const handleAnswer = useCallback((idx: number) => {
     if (phase !== 'player_turn' || selectedAnswer !== null) return;
     setSelectedAnswer(idx);
-    const choice = currentQ.choices[idx];
+    const choice = visibleChoices[idx];
 
     if (choice.correct) {
       const dmg = currentQ.damage;
@@ -166,12 +171,12 @@ export default function PptBossScreen() {
         }, 2000);
       }
     }
-  }, [phase, selectedAnswer, currentQ, bossHP, playerHP]);
+  }, [phase, selectedAnswer, currentQ, visibleChoices, bossHP, playerHP]);
 
   const handleVictory = useCallback(() => {
     dispatch({ type: 'DEFEAT_PPT_BOSS' });
     dispatch({ type: 'ADD_XP', amount: 100 });
-    dispatch({ type: 'ADD_CREDS', amount: 150 });
+    dispatch({ type: 'ADD_CREDS', amount: minigameCreditReward(120) });
     dispatch({ type: 'ADD_ACHIEVEMENT', achievement: {
       id: 'beat_ppt', name: 'Death to Slides',
       desc: 'Defeated CPT PowerPoint in battle.',
@@ -331,7 +336,7 @@ export default function PptBossScreen() {
               </div>
 
               <div className="space-y-2">
-                {currentQ.choices.map((choice, idx) => {
+                {visibleChoices.map((choice, idx) => {
                   let bg = 'bg-slate-800/60 border-slate-600 hover:border-cyan-500/50 hover:bg-slate-700/60';
                   let textColor = 'text-slate-200';
                   if (selectedAnswer !== null) {
@@ -409,7 +414,7 @@ export default function PptBossScreen() {
                   <div className="text-slate-400 text-xs">Combat bonus</div>
                 </div>
                 <div className="bg-cyan-900/30 rounded-lg p-3 border border-cyan-500/20">
-                  <div className="text-cyan-400 font-bold">+150 CR</div>
+                  <div className="text-cyan-400 font-bold">+40 CR</div>
                   <div className="text-slate-400 text-xs">Victory reward</div>
                 </div>
               </div>
