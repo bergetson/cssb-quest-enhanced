@@ -12,6 +12,7 @@ export type Screen =
   | 'notebook' | 'certificate' | 'secret' | 'roles' | 'ref'
   | 'calc' | 'daily' | 'minigame' | 'leaderboard' | 'settings'
   | 'ppt_boss' | 'achievements' | 'inventory' | 'dorval_call'
+  | 'avatar'
   | 'warrior' | 'opfor' | 'dsca' | 'convoy' | 'new_soldier';
 
 export interface Player {
@@ -71,6 +72,16 @@ export interface Achievement {
   earnedAt: number;
 }
 
+export interface AvatarConfig {
+  body: 'light' | 'tan' | 'brown' | 'dark';
+  hair: 'black' | 'brown' | 'blond' | 'red' | 'gray';
+  hairStyle: 'short' | 'fade' | 'bun' | 'bald';
+  face: 'calm' | 'focused' | 'smirk' | 'serious';
+  uniform: 'ocp' | 'pt' | 'dress' | 'field';
+  patch: 'cssb' | 's1' | 's2' | 's3' | 's4' | 's6' | 'spo';
+  backdrop: 'toc' | 'motorpool' | 'field' | 'mountains';
+}
+
 export interface ChaosEvent {
   id: string;
   name: string;
@@ -99,6 +110,7 @@ export interface GameState {
   scores: Record<string, number>;
   achievements: Record<string, Achievement>;
   chaosMeter: number; // 0-100
+  avatar: AvatarConfig;
   activeCosmeticId: string | null;
   pptBossUnlocked: boolean;
   pptBossDefeated: boolean;
@@ -353,10 +365,16 @@ export const CHARS: Record<string, { name: string; emoji: string; color: string;
 export const DIFFS: Record<Difficulty, { name: string; time: number; mult: number; hints: boolean; hard: boolean; noSaves: boolean; color: string; desc: string }> = {
   crawl:     { name: 'CRAWL',              time: 70, mult: 1.0,  hints: true,  hard: false, noSaves: false, color: 'green',  desc: 'Full hints, generous time, saves allowed. Learn the fundamentals.' },
   walk:      { name: 'WALK',               time: 58, mult: 1.05, hints: true,  hard: false, noSaves: false, color: 'cyan',   desc: 'Hints available, moderate time pressure. Build confidence.' },
-  run:       { name: 'RUN',                time: 46, mult: 1.25, hints: false, hard: true,  noSaves: false, color: 'orange', desc: 'No hints, tight time. Think like a staff officer.' },
-  nightmare: { name: 'MDMP NIGHTMARE',     time: 34, mult: 1.55, hints: false, hard: true,  noSaves: false, color: 'red',    desc: 'Brutal time, chaos events, fog of war. For the brave.' },
-  qual:      { name: 'STAFF QUALIFICATION',time: 38, mult: 1.8,  hints: false, hard: true,  noSaves: true,  color: 'gold',   desc: 'No saves. No mercy. Earn your qualification.' },
+  run:       { name: 'RUN',                time: 40, mult: 1.30, hints: false, hard: true,  noSaves: false, color: 'orange', desc: 'No formula hints, tighter grading, and heavier chaos penalties. The reference data is still available.' },
+  nightmare: { name: 'MDMP NIGHTMARE',     time: 28, mult: 1.70, hints: false, hard: true,  noSaves: true,  color: 'red',    desc: 'Brutal time, stricter pass gate, no saves, and hard consequence management.' },
+  qual:      { name: 'STAFF QUALIFICATION',time: 30, mult: 2.0,  hints: false, hard: true,  noSaves: true,  color: 'gold',   desc: 'No saves, 80% pass gate, and every answer must be earned from the brief and references.' },
 };
+
+export function passThresholdForDifficulty(difficulty: Difficulty) {
+  if (difficulty === 'qual' || difficulty === 'nightmare') return 0.80;
+  if (difficulty === 'run') return 0.75;
+  return 0.70;
+}
 
 // ─── Shop Items ───────────────────────────────────────────────────────────────
 
@@ -378,63 +396,63 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'coffee', name: 'Black Coffee', desc: '+15 Focus, +10 Clarity for next mission',
     flavor: 'Army-grade. Tastes like ambition and regret.',
-    cost: 40, emoji: '☕', color: 'orange', effect: 'focus+15,clarity+10',
+    cost: 55, emoji: '☕', color: 'orange', effect: 'focus+15,clarity+10',
     category: 'consumable', speaker: 'csm',
     speakerLine: 'CSM Good: "Son, this is not a Starbucks. Drink it black or don\'t drink it."',
   },
   {
     id: 'ray_card', name: 'SFC Ray Save Card', desc: 'Automatically corrects one wrong answer',
     flavor: '"The secret ingredient is crime." — SFC Ray',
-    cost: 75, emoji: '🕶️', color: 'purple', effect: 'rayCard+1',
+    cost: 160, emoji: '🕶️', color: 'purple', effect: 'rayCard+1',
     category: 'powerup', speaker: 'ray',
     speakerLine: 'SFC Ray: "I\'m not saying I\'ll fix it. I\'m saying it\'ll be fixed."',
   },
   {
     id: 'mercy', name: 'Tactical Mercy Card', desc: 'Saves one incorrect answer from counting against you',
     flavor: 'Issued by the E4 Mafia. No questions asked.',
-    cost: 60, emoji: '🃏', color: 'cyan', effect: 'mercy+1',
+    cost: 140, emoji: '🃏', color: 'cyan', effect: 'mercy+1',
     category: 'powerup', speaker: 'snedigar',
     speakerLine: 'PVT Snedigar: "I found this in the motor pool. Seemed important."',
   },
   {
     id: 'redbull', name: 'Red Bull (4-pack)', desc: 'Unlocks the Red Bull Timing mini-game',
     flavor: 'Gives wings. Costs dignity.',
-    cost: 50, emoji: '🔴', color: 'red', effect: 'redbull+4',
+    cost: 90, emoji: '🔴', color: 'red', effect: 'redbull+4',
     category: 'consumable', speaker: 'bash',
     speakerLine: 'SSG Bash: "The timing is everything. Just like chess."',
   },
   {
     id: 'e4', name: 'E4 Mafia Alliance', desc: 'Random chance to auto-fix one bad number per mission',
     flavor: 'They know things. They see things. They fix things.',
-    cost: 120, emoji: '🤝', color: 'lime', effect: 'e4=true',
+    cost: 300, emoji: '🤝', color: 'lime', effect: 'e4=true',
     category: 'powerup', speaker: 'ray',
     speakerLine: 'SFC Ray: "Don\'t ask how they know. Just be grateful."',
   },
   {
     id: 'notebook_pro', name: 'Tactical Notebook Pro', desc: 'Doubles notebook capacity and adds search',
     flavor: 'Waterproof. Bullet-resistant. Smells like victory.',
-    cost: 80, emoji: '📓', color: 'gold', effect: 'notebookPro=true',
+    cost: 110, emoji: '📓', color: 'gold', effect: 'notebookPro=true',
     category: 'cosmetic', speaker: 'ashley',
     speakerLine: 'CPT Ashley Meadlee: "Write everything down. Everything."',
   },
   {
     id: 'ppt_shield', name: 'Anti-PowerPoint Shield', desc: 'Blocks CPT PowerPoint interference events',
     flavor: 'Repels slide decks. Attracts actual decisions.',
-    cost: 90, emoji: '🛡️', color: 'cyan', effect: 'pptShield=true',
+    cost: 180, emoji: '🛡️', color: 'cyan', effect: 'pptShield=true',
     category: 'powerup', speaker: 'cho',
     speakerLine: 'CPT Cho: "Analysis first. Slides never."',
   },
   {
     id: 'snedigar_insurance', name: 'Snedigar Insurance Policy', desc: 'Converts one chaos event into a bonus',
     flavor: 'Underwritten by the E4 Mafia. Premiums paid in MRE cheese.',
-    cost: 100, emoji: '📄', color: 'orange', effect: 'snedigarIns=true',
+    cost: 165, emoji: '📄', color: 'orange', effect: 'snedigarIns=true',
     category: 'powerup', speaker: 'snedigar',
     speakerLine: 'PVT Snedigar: "I didn\'t mean to. But it worked out."',
   },
   {
     id: 'kyle_calc', name: 'Kyle\'s Calculator', desc: 'Shows formula hints on math steps',
     flavor: 'Borrowed from CPT Kyle Meadlee. Return it.',
-    cost: 110, emoji: '🧮', color: 'green', effect: 'kyleCalc=true',
+    cost: 190, emoji: '🧮', color: 'green', effect: 'kyleCalc=true',
     category: 'powerup', speaker: 'kyle',
     speakerLine: 'CPT Kyle Meadlee: "The formula is on the back. Don\'t lose it."',
   },
@@ -453,58 +471,58 @@ export const SHOP_ITEMS: ShopItem[] = [
     speakerLine: 'GEN Moreni: "Be brilliant at the basics."',
   },
   {
-    id: 'dorval_phone', name: 'BG Dorval\'s Direct Line', desc: 'Skip one choice step with a perfect score',
-    flavor: 'He answers on the second ring. Always.',
-    cost: 160, emoji: '☎️', color: 'cyan', effect: 'dorvalPhone=true',
-    category: 'powerup', speaker: 'dorval',
-    speakerLine: 'BG Dorval: "I\'ll handle it. Brief me in 5."',
+    id: 'battle_captain_hotline', name: 'Battle Captain Hotline', desc: 'One-time confidence boost: +10 command and +10 clarity',
+    flavor: 'Not BG Dorval. This one is just the TOC politely telling you to breathe.',
+    cost: 220, emoji: '☎️', color: 'cyan', effect: 'cmd+10,clarity+10',
+    category: 'powerup', speaker: 'xo',
+    speakerLine: 'MAJ Pancheau: "BLUF first. Status second. Recommendation third."',
   },
   {
     id: 'gary_weather', name: 'LT Gary\'s Weather Report', desc: 'Reveals the correct answer on one hard question',
     flavor: 'Forecasted: 100% chance of getting it right.',
-    cost: 85, emoji: '🌧️', color: 'cyan', effect: 'garyWeather+1',
+    cost: 130, emoji: '🌧️', color: 'cyan', effect: 'garyWeather+1',
     category: 'powerup', speaker: 's2',
     speakerLine: 'LT Gary: "The forecast is... actually favorable for once."',
   },
   {
     id: 'pancheau_brief', name: 'MAJ Pancheau\'s OPORD Brief', desc: '+20 Clarity for the next two missions',
     flavor: 'Crisp. Concise. Exactly 5 minutes. Somehow covers everything.',
-    cost: 130, emoji: '📋', color: 'gold', effect: 'clarity+20',
+    cost: 190, emoji: '📋', color: 'gold', effect: 'clarity+20',
     category: 'consumable', speaker: 'xo',
     speakerLine: 'MAJ Pancheau: "Here\'s the bottom line up front. You\'re welcome."',
   },
   {
     id: 'csm_good_stare', name: 'CSM Good\'s Motivational Stare', desc: 'Resets chaos to 0 for one mission',
     flavor: 'No words needed. The chaos simply... leaves.',
-    cost: 95, emoji: '🫡', color: 'lime', effect: 'chaos=0',
+    cost: 170, emoji: '🫡', color: 'lime', effect: 'chaos=0',
     category: 'consumable', speaker: 'csm',
     speakerLine: 'CSM Good: "Chaos is a choice, soldier. Choose differently."',
   },
   {
     id: 'berget_wrench', name: 'CPT Berget\'s Magic Wrench', desc: 'All vehicles FMC for one mission (no NMC penalty)',
     flavor: 'Somehow the PMCS got done. Nobody saw it happen.',
-    cost: 115, emoji: '🛠️', color: 'orange', effect: 'allFMC=true',
+    cost: 210, emoji: '🛠️', color: 'orange', effect: 'allFMC=true',
     category: 'powerup', speaker: 's4',
     speakerLine: 'CPT Berget: "All vehicles are FMC. Don\'t ask questions."',
   },
   {
     id: 'whitehead_op', name: 'CPT Whitehead\'s Op Order', desc: 'Doubles XP earned on the next mission',
     flavor: 'Issued in 3 minutes flat. Still somehow complete.',
-    cost: 145, emoji: '🗺️', color: 'green', effect: 'xpDouble=true',
+    cost: 240, emoji: '🗺️', color: 'green', effect: 'xpDouble=true',
     category: 'powerup', speaker: 's3',
     speakerLine: 'CPT Whitehead: "The plan is simple. Execute it perfectly."',
   },
   {
     id: 'drinville_signal', name: 'LT Drinville\'s Comms Boost', desc: 'PACE plan never fails for one mission',
     flavor: 'Signal is up. All four methods. Simultaneously.',
-    cost: 70, emoji: '📡', color: 'cyan', effect: 'paceBoost=true',
+    cost: 125, emoji: '📡', color: 'cyan', effect: 'paceBoost=true',
     category: 'consumable', speaker: 's6',
     speakerLine: 'LT Drinville: "All comms are up. I\'m as surprised as you are."',
   },
   {
     id: 'gibson_star', name: 'MG Gibson\'s Star Power', desc: 'Auto-GOLD grade on any one mission',
     flavor: 'One star. Maximum effect.',
-    cost: 350, emoji: '⭐', color: 'gold', effect: 'gibsonStar=true',
+    cost: 900, emoji: '⭐', color: 'gold', effect: 'gibsonStar=true',
     category: 'secret', speaker: 'gibson',
     speakerLine: 'MG Gibson: "Outstanding. Brief me on how you did it."',
   },
@@ -554,7 +572,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'tornado', name: 'Shopette Tornado', desc: 'Chaos item. Increases chaos meter but gives +30 XP.',
     flavor: 'SPC Morgan and SGT Kimball love these things.',
-    cost: 55, emoji: '🌪️', color: 'red', effect: 'chaos+20,xp+30',
+    cost: 45, emoji: '🌪️', color: 'red', effect: 'chaos+20,xp+30',
     category: 'consumable', speaker: 'snedigar',
     speakerLine: 'PVT Snedigar: "I got three of these from the shopette. SPC Morgan showed me."',
   },
@@ -562,7 +580,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'dorval_phone_call', name: 'BG Dorval\'s Direct Line', desc: 'Call BG Dorval and give her a piece of your mind.',
     flavor: 'She answers on the second ring. Are you sure about this?',
-    cost: 200, emoji: '☎️', color: 'cyan', effect: 'dorval_call',
+    cost: 2500, emoji: '☎️', color: 'cyan', effect: 'dorval_call',
     category: 'secret', speaker: 'dorval',
     speakerLine: 'BG Dorval: "...Hello?"',
   },
@@ -675,6 +693,9 @@ export const ACHIEVEMENTS_DEF: { id: string; name: string; desc: string; emoji: 
   { id: 'beat_bash', name: 'Beating Bash at Chess', desc: 'Defeated SSG Bash at the resource battle.', emoji: '♟️', condition: 'Win the Bash resource battle' },
   { id: 'beat_ppt', name: 'Death to Slides', desc: 'Defeated CPT PowerPoint in battle.', emoji: '📊', condition: 'Win the CPT PowerPoint boss battle' },
   { id: 'secret_phrase', name: 'Premier CSSB', desc: 'Discovered the secret phrase.', emoji: '🔒', condition: 'Buy the classified item' },
+  { id: 'shopette_tornado', name: 'Questionable Nutrition', desc: 'Bought a Shopette Tornado on purpose.', emoji: '🌪️', condition: 'Purchase the Shopette Tornado' },
+  { id: 'aviator_energy', name: 'Logistics Aviator', desc: 'Equipped aviators for a job that does not involve flying.', emoji: '🕶️', condition: 'Purchase the Aviator Glasses' },
+  { id: 'battle_captain_hotline', name: 'BLUF Machine', desc: 'Bought the Battle Captain Hotline.', emoji: '☎️', condition: 'Purchase the hotline' },
   { id: 'candy_collector', name: 'Sweet Tooth', desc: 'Collected 5 pieces of candy.', emoji: '🍬', condition: 'Accumulate 5 candies' },
   { id: 'ray_save', name: "Ray's Got You", desc: 'SFC Ray saved you from a wrong answer.', emoji: '🕶️', condition: 'Use a Ray Save Card' },
   { id: 'chaos_max', name: 'Absolute Chaos', desc: 'Hit 100% chaos meter.', emoji: '🌪️', condition: 'Fill the chaos meter completely' },
@@ -1287,18 +1308,37 @@ export const DAILY_CHALLENGES: QuizQuestion[] = [
 
 // ─── Base State ───────────────────────────────────────────────────────────────
 
+export function defaultAvatar(): AvatarConfig {
+  return {
+    body: 'tan',
+    hair: 'brown',
+    hairStyle: 'short',
+    face: 'focused',
+    uniform: 'ocp',
+    patch: 'cssb',
+    backdrop: 'toc',
+  };
+}
+
+export function generateChallengeCode() {
+  const terrain = ['MOOSE', 'GRANITE', 'COYOTE', 'GLACIER', 'COPPER', 'TIMBER', 'BISON', 'ASPEN'];
+  const action = ['LIFT', 'MARCH', 'PACK', 'FORGE', 'HAUL', 'SYNC', 'READY', 'SPUR'];
+  const n = Math.floor(100 + Math.random() * 900);
+  return `${terrain[Math.floor(Math.random() * terrain.length)]}-${action[Math.floor(Math.random() * action.length)]}-${n}`;
+}
+
 export function baseState(): GameState {
   return {
     screen: 'title',
     player: null,
     difficulty: 'walk',
-    challenge: 'MOOSE-495',
+    challenge: generateChallengeCode(),
     scenario: null,
     missionIndex: 0,
     stepIndex: 0,
     timeBank: 0,
     stats: { cmd: 55, clarity: 50, tempo: 50, coord: 50, readiness: 50, chaos: 24, focus: 50, morale: 55 },
-    creds: 150,
+    creds: 60,
     xp: 0,
     level: 1,
     streak: 0,
@@ -1332,6 +1372,7 @@ export function baseState(): GameState {
     questionPool: {},
     achievements: {},
     chaosMeter: 0,
+    avatar: defaultAvatar(),
     activeCosmeticId: null,
     pptBossUnlocked: false,
     pptBossDefeated: false,
