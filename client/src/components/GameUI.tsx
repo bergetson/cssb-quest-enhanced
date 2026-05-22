@@ -1,5 +1,6 @@
 import { useGame } from '../contexts/GameContext';
 import { CHARS, DIFFS } from '../lib/gameData';
+import PixelSoldierAvatar from './PixelSoldierAvatar';
 
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 
@@ -10,9 +11,19 @@ export function TopBar() {
   return (
     <div className="topbar flex items-center justify-between gap-3">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl border-2 border-yellow-400/60 bg-yellow-400/10 flex items-center justify-center text-yellow-400 font-bold text-sm" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-          495
-        </div>
+        {state.player ? (
+          <button
+            onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'avatar' })}
+            className="avatar-topbar-button"
+            aria-label="Edit avatar"
+          >
+            <PixelSoldierAvatar avatar={state.avatar} cosmeticId={state.activeCosmeticId} chaos={state.chaosMeter} size="sm" />
+          </button>
+        ) : (
+          <div className="w-9 h-9 rounded-xl border-2 border-yellow-400/60 bg-yellow-400/10 flex items-center justify-center text-yellow-400 font-bold text-sm" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+            495
+          </div>
+        )}
         <div>
           <div className="text-xs font-bold tracking-widest text-yellow-400/90" style={{ fontFamily: 'Rajdhani, sans-serif' }}>CSSB QUEST</div>
           <div className="text-[10px] text-slate-500 mono">{state.player ? `${state.player.rank} ${state.player.name}` : 'UNASSIGNED'}</div>
