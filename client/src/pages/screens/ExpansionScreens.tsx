@@ -3,6 +3,7 @@ import { useGame } from '../../contexts/GameContext';
 import {
   ScreenWrap, MilCard, MilButton, MilTag, SectionTitle, ProgressBar, Divider,
 } from '../../components/GameUI';
+import OutcomeFX from '../../components/OutcomeFX';
 import {
   convoyScenarios,
   dscaMissions,
@@ -31,6 +32,7 @@ import {
   type ExpansionGrade,
   type ExpansionProgress,
 } from '../../lib/expansionProgress';
+import { shuffleWithSeed } from '../../lib/gameplayUtils';
 
 type MetricMap = Record<string, number>;
 
@@ -200,6 +202,7 @@ function ScoreAARPanel({
   const color = gradeColor[grade];
   return (
     <MilCard color={color} className={`p-5 after-action-card ${score >= 80 ? 'after-action-pass' : 'after-action-fail'}`}>
+      <OutcomeFX outcome={score >= 80 ? 'pass' : 'fail'} label={score >= 80 ? 'GOOD REP' : 'RETRAIN'} />
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <div>
           <div className="text-[10px] mono tracking-[0.2em] text-slate-500">// AFTER ACTION REVIEW</div>
@@ -386,7 +389,7 @@ export function WarriorTaskArcadeScreen() {
             <MilCard className="p-4">
               <div className="text-sm text-slate-300 mb-3">Tap the items in order:</div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {scenario.sequenceChoices?.map(choice => (
+                {shuffleWithSeed(scenario.sequenceChoices || [], `warrior-sequence:${scenario.id}`).map(choice => (
                   <MilButton key={choice} size="sm" disabled={sequence.includes(choice)} onClick={() => setSequence([...sequence, choice])}>
                     {choice}
                   </MilButton>
@@ -410,7 +413,7 @@ export function WarriorTaskArcadeScreen() {
                   <div className="text-[10px] mono text-slate-500 mb-1">{round.label}</div>
                   <div className="text-sm font-semibold text-slate-200 mb-3">{round.prompt}</div>
                   <div className="grid gap-2">
-                    {round.options.map(option => (
+                    {shuffleWithSeed(round.options, `warrior-round:${scenario.id}:${round.id}`).map(option => (
                       <OptionButton
                         key={option}
                         text={option}
@@ -677,10 +680,10 @@ export function OpforRecognitionScreen() {
         <div className="max-w-4xl mx-auto px-4 py-6">
           <ModuleHeader eyebrow="OPFOR RECOGNITION" title="Flashcard Mode" subtitle="Identify category, faction, likely model, and confidence." color="red" onBack={() => setMode('hub')} />
           <MilCard className="p-4 mb-4"><AssetVisual asset={asset} /></MilCard>
-          <RecognitionQuestion title="Category" options={categoryPool.filter(item => item === asset.category || ['Main Battle Tank', 'Infantry Fighting Vehicle', 'Air Defense', 'Tactical Truck', 'Unknown / Not enough information'].includes(item)).slice(0, 5)} value={answers.category} onPick={value => setAnswers({ ...answers, category: value })} />
-          <RecognitionQuestion title="Faction" options={['Russian', 'Chinese', 'UAS', 'Unknown']} value={answers.faction} onPick={value => setAnswers({ ...answers, faction: value })} />
-          <RecognitionQuestion title="Likely Model" options={modelOptions} value={answers.model} onPick={value => setAnswers({ ...answers, model: value })} />
-          <RecognitionQuestion title="Confidence" options={['High', 'Medium', 'Low']} value={answers.confidence} onPick={value => setAnswers({ ...answers, confidence: value })} />
+          <RecognitionQuestion title="Category" seed={`flash-category:${asset.id}:${index}`} options={categoryPool.filter(item => item === asset.category || ['Main Battle Tank', 'Infantry Fighting Vehicle', 'Air Defense', 'Tactical Truck', 'Unknown / Not enough information'].includes(item)).slice(0, 5)} value={answers.category} onPick={value => setAnswers({ ...answers, category: value })} />
+          <RecognitionQuestion title="Faction" seed={`flash-faction:${asset.id}:${index}`} options={['Russian', 'Chinese', 'UAS', 'Unknown']} value={answers.faction} onPick={value => setAnswers({ ...answers, faction: value })} />
+          <RecognitionQuestion title="Likely Model" seed={`flash-model:${asset.id}:${index}`} options={modelOptions} value={answers.model} onPick={value => setAnswers({ ...answers, model: value })} />
+          <RecognitionQuestion title="Confidence" seed={`flash-confidence:${asset.id}:${index}`} options={['High', 'Medium', 'Low']} value={answers.confidence} onPick={value => setAnswers({ ...answers, confidence: value })} />
           <MilButton color="red" className="w-full mt-4" disabled={Object.keys(answers).length < 4} onClick={submitFlashcard}>SUBMIT RECOGNITION</MilButton>
         </div>
       </ScreenWrap>
@@ -695,6 +698,7 @@ export function OpforRecognitionScreen() {
           <MilCard className="p-4 mb-4"><AssetVisual asset={promptAsset} silhouette /></MilCard>
           <RecognitionQuestion
             title="What category is best supported?"
+            seed={`silhouette:${promptAsset.id}:${index}`}
             options={[promptAsset.category, 'Main Battle Tank', 'Armored Personnel Carrier', 'Air Defense', 'Unknown / Not enough information'].filter((value, itemIndex, arr) => arr.indexOf(value) === itemIndex)}
             value={answers.category}
             onPick={value => setAnswers({ ...answers, category: value })}
@@ -720,7 +724,7 @@ export function OpforRecognitionScreen() {
             <div className="text-[10px] mono text-slate-500 mb-1">// SCENARIO</div>
             <p className="text-sm text-slate-300">{prompt.scenario}</p>
           </MilCard>
-          <RecognitionQuestion title="Pick the best report" options={options} value={answers.report} onPick={value => setAnswers({ ...answers, report: value })} />
+          <RecognitionQuestion title="Pick the best report" seed={`report:${prompt.id}:${index}`} options={options} value={answers.report} onPick={value => setAnswers({ ...answers, report: value })} />
           <MilButton color="red" className="w-full mt-4" disabled={!answers.report} onClick={submitReport}>SUBMIT REPORT</MilButton>
         </div>
       </ScreenWrap>
@@ -734,7 +738,7 @@ export function OpforRecognitionScreen() {
           <ModuleHeader eyebrow="OPFOR RECOGNITION" title="Matching Board" subtitle="Match recognition clues to broad asset categories." color="red" onBack={() => setMode('hub')} />
           <div className="space-y-3">
             {matchingPrompts.map(prompt => (
-              <RecognitionQuestion key={prompt.id} title={prompt.prompt} options={[prompt.answer, 'Main Battle Tank', 'Air Defense', 'Transport Helicopter', 'Small UAS'].filter((value, itemIndex, arr) => arr.indexOf(value) === itemIndex)} value={answers[prompt.id]} onPick={value => setAnswers({ ...answers, [prompt.id]: value })} />
+              <RecognitionQuestion key={prompt.id} title={prompt.prompt} seed={`match:${prompt.id}`} options={[prompt.answer, 'Main Battle Tank', 'Air Defense', 'Transport Helicopter', 'Small UAS'].filter((value, itemIndex, arr) => arr.indexOf(value) === itemIndex)} value={answers[prompt.id]} onPick={value => setAnswers({ ...answers, [prompt.id]: value })} />
             ))}
           </div>
           <MilButton color="red" className="w-full mt-4" disabled={Object.keys(answers).length < matchingPrompts.length} onClick={submitMatching}>CHECK MATCHES</MilButton>
@@ -780,12 +784,28 @@ export function OpforRecognitionScreen() {
   );
 }
 
-function RecognitionQuestion({ title, options, value, onPick }: { title: string; options: string[]; value?: string; onPick: (value: string) => void }) {
+function RecognitionQuestion({
+  title,
+  options,
+  value,
+  onPick,
+  seed,
+}: {
+  title: string;
+  options: string[];
+  value?: string;
+  onPick: (value: string) => void;
+  seed?: string;
+}) {
+  const visibleOptions = useMemo(
+    () => shuffleWithSeed(options, seed || title),
+    [options, seed, title],
+  );
   return (
     <MilCard className="p-4 mb-3">
       <div className="text-sm font-semibold text-slate-200 mb-3">{title}</div>
       <div className="grid gap-2">
-        {options.map(option => (
+        {visibleOptions.map(option => (
           <OptionButton key={option} text={option} selected={value === option} onClick={() => onPick(option)} />
         ))}
       </div>
@@ -865,7 +885,7 @@ export function DscaMissionsScreen() {
                 <MilTag color={active.kind === 'friction' ? 'orange' : active.kind === 'commander' ? 'gold' : 'cyan'}>{active.title}</MilTag>
                 <h2 className="text-2xl font-black text-slate-100 mt-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{active.prompt}</h2>
                 <div className="grid gap-3 mt-4">
-                  {active.options.map(option => <ChoiceCard key={option.text} option={option} onChoose={() => choose(option)} />)}
+                  {shuffleWithSeed(active.options, `dsca:${mission.id}:${step}`).map(option => <ChoiceCard key={option.text} option={option} onChoose={() => choose(option)} />)}
                 </div>
               </MilCard>
             </div>
@@ -989,7 +1009,7 @@ export function ConvoyPlannerScreen() {
                   <MilTag color="orange">PLAN BUILDER</MilTag>
                   <h2 className="text-2xl font-black text-slate-100 mt-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>Select Route</h2>
                   <div className="grid gap-3 mt-4">
-                    {scenario.routes.map(route => (
+                    {shuffleWithSeed(scenario.routes, `convoy-route:${scenario.id}`).map(route => (
                       <button key={route.id} className="mil-card p-4 text-left hover:-translate-y-0.5 transition-transform" onClick={() => chooseRoute(route.best)}>
                         <div className="flex justify-between gap-3"><span className="font-bold text-slate-100">{route.name}</span><MilTag color={route.best ? 'green' : route.risk === 'High' ? 'red' : 'orange'}>{route.risk}</MilTag></div>
                         <div className="text-xs text-slate-500 mt-1">{route.distanceKm} km | {route.travelTimeMinutes} min | {route.notes}</div>
@@ -1002,7 +1022,7 @@ export function ConvoyPlannerScreen() {
                 <MilCard color="orange" className="p-5">
                   <MilTag color="orange">PLAN STEP {step + 1}/{scenario.planSteps.length}</MilTag>
                   <h2 className="text-2xl font-black text-slate-100 mt-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{currentPlan.prompt}</h2>
-                  <div className="grid gap-3 mt-4">{currentPlan.options.map(option => <ChoiceCard key={option.text} option={option} onChoose={() => choosePlan(option)} />)}</div>
+                  <div className="grid gap-3 mt-4">{shuffleWithSeed(currentPlan.options, `convoy-plan:${scenario.id}:${step}`).map(option => <ChoiceCard key={option.text} option={option} onChoose={() => choosePlan(option)} />)}</div>
                 </MilCard>
               )}
               {phase === 'execute' && currentFriction && (
@@ -1010,7 +1030,7 @@ export function ConvoyPlannerScreen() {
                   <MilTag color="red">MISSION EXECUTION</MilTag>
                   <h2 className="text-2xl font-black text-slate-100 mt-3" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{currentFriction.title}</h2>
                   <p className="text-sm text-slate-400 mt-2">{currentFriction.text}</p>
-                  <div className="grid gap-3 mt-4">{currentFriction.options.map(option => <ChoiceCard key={option.text} option={option} onChoose={() => chooseFriction(option)} />)}</div>
+                  <div className="grid gap-3 mt-4">{shuffleWithSeed(currentFriction.options, `convoy-friction:${scenario.id}:${step}`).map(option => <ChoiceCard key={option.text} option={option} onChoose={() => chooseFriction(option)} />)}</div>
                 </MilCard>
               )}
             </div>
@@ -1119,6 +1139,7 @@ export function NewSoldierScreen() {
               <RecognitionQuestion
                 key={`${check.prompt}-${index}`}
                 title={check.prompt}
+                seed={`new-soldier:${lesson.id}:${index}`}
                 options={check.options}
                 value={answers[String(index)]}
                 onPick={value => setAnswers({ ...answers, [String(index)]: value })}
