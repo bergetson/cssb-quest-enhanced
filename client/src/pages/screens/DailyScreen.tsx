@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilCard, MilButton, MilTag } from '../../components/GameUI';
 import { toast } from 'sonner';
+import { shuffleWithSeed } from '../../lib/gameplayUtils';
 
 // Daily question pool — rotates by day of year
 const DAILY_POOL = [
@@ -181,18 +182,23 @@ export default function DailyScreen() {
   const { state, dispatch } = useGame();
   const [answered, setAnswered] = useState<string | null>(null);
   const today = new Date();
+  const todayKey = today.toDateString();
   const q = getDailyQuestion(today);
-  const isDone = state.dailyDone && state.dailyDate === today.toDateString();
+  const options = useMemo(
+    () => shuffleWithSeed(q.options, `daily:${todayKey}:${state.challenge}`),
+    [q, state.challenge, todayKey],
+  );
+  const isDone = state.dailyDone && state.dailyDate === todayKey;
 
   function handleAnswer(opt: string) {
     if (answered || isDone) return;
     setAnswered(opt);
     const correct = opt === q.a;
     if (correct) {
-      dispatch({ type: 'ADD_CREDS', amount: 50 });
+      dispatch({ type: 'ADD_CREDS', amount: 15 });
       dispatch({ type: 'ADD_XP', amount: 30 });
       dispatch({ type: 'ADD_STREAK' });
-      toast.success('Correct! +50 CR, +30 XP');
+      toast.success('Correct! +15 CR, +30 XP');
     } else {
       dispatch({ type: 'RESET_STREAK' });
       toast.error('Wrong. ' + q.a);
@@ -212,7 +218,7 @@ export default function DailyScreen() {
           <SectionTitle color="gold">DAILY CHALLENGE</SectionTitle>
           <div className="text-right">
             <div className="text-xs text-slate-500 mono">{today.toLocaleDateString()}</div>
-            <div className="text-xs text-yellow-400 mono">+50 CR</div>
+            <div className="text-xs text-yellow-400 mono">+15 CR</div>
           </div>
         </div>
 
@@ -236,7 +242,7 @@ export default function DailyScreen() {
             </MilCard>
 
             <div className="grid gap-2 mb-4">
-              {q.options.map((opt, i) => {
+              {options.map((opt, i) => {
                 const isSelected = answered === opt;
                 const isCorrect = answered && opt === q.a;
                 const isWrong = answered === opt && opt !== q.a;
@@ -256,7 +262,7 @@ export default function DailyScreen() {
             {(answered || isDone) && (
               <div className={`animate-fade-in-up ${answered === q.a ? 'success-box' : 'danger-box'} mb-4`}>
                 <div className="font-bold mb-1 text-xs" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                  {answered === q.a ? '✓ CORRECT — +50 CR' : '✗ INCORRECT'}
+                  {answered === q.a ? '✓ CORRECT — +15 CR' : '✗ INCORRECT'}
                 </div>
                 <p className="text-xs">{q.learn}</p>
               </div>
