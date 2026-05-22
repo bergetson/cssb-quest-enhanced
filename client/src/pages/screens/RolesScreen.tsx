@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilCard, MilButton, MilTag, Divider } from '../../components/GameUI';
 import { toast } from 'sonner';
+import { shuffleWithSeed } from '../../lib/gameplayUtils';
 
 const STAFF_SECTIONS = [
   {
@@ -101,6 +102,13 @@ export default function RolesScreen() {
   const [done, setDone] = useState(false);
 
   const section = STAFF_SECTIONS.find(s => s.id === selected);
+  const activeQuestion = quizSection?.questions[qIdx];
+  const activeOptions = useMemo(
+    () => activeQuestion && quizSection
+      ? shuffleWithSeed(activeQuestion.options, `roles:${quizSection.id}:${qIdx}`)
+      : [],
+    [activeQuestion, qIdx, quizSection],
+  );
 
   function startQuiz(sec: typeof STAFF_SECTIONS[0]) {
     setQuizSection(sec);
@@ -154,7 +162,7 @@ export default function RolesScreen() {
                 <p className="text-sm text-slate-200">{q.q}</p>
               </div>
               <div className="grid gap-2">
-                {q.options.map((opt, i) => (
+                {activeOptions.map((opt, i) => (
                   <button
                     key={i}
                     onClick={() => handleAnswer(opt)}
