@@ -44,10 +44,8 @@ export default function StoreScreen() {
       toast.info('E4 Mafia Alliance already active.');
       return;
     }
-    // Special: Dorval call — trigger chicken-out screen
-    if (item.id === 'dorval_call') {
-      dispatch({ type: 'SPEND_CREDS', amount: item.cost });
-      dispatch({ type: 'SET_SCREEN', screen: 'dorval_call' });
+    if (item.id === 'dorval_phone_call' && (state.storeItemsBought.includes(item.id) || state.achievements.dorval_call)) {
+      toast.info('You only get one BG Dorval phone call. Spend it wisely.');
       return;
     }
     dispatch({ type: 'BUY_ITEM', itemId: item.id, cost: item.cost });
@@ -86,7 +84,7 @@ export default function StoreScreen() {
       return;
     }
     if (itemId === 'candy') {
-      dispatch({ type: 'USE_ITEM', itemId: 'candy' });
+      dispatch({ type: 'USE_CANDY' });
       dispatch({ type: 'REDUCE_CHAOS', amount: 5 });
       toast.success('🍬 Candy consumed. Chaos reduced by 5. You feel strangely better.');
       return;
@@ -179,6 +177,7 @@ export default function StoreScreen() {
                 const owned = state.inventory[item.id] || 0;
                 const canAfford = state.creds >= item.cost;
                 const isSpecial = item.category === 'secret';
+                const isOneTimeUsed = item.id === 'dorval_phone_call' && (state.storeItemsBought.includes(item.id) || !!state.achievements.dorval_call);
 
                 return (
                   <div
@@ -192,6 +191,7 @@ export default function StoreScreen() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-bold text-slate-200" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{item.name}</span>
                           {owned > 0 && <MilTag color="green">OWNED ×{owned}</MilTag>}
+                          {isOneTimeUsed && <MilTag color="red">ONE CALL USED</MilTag>}
                           <MilTag color={item.color}>{item.category}</MilTag>
                         </div>
                         <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
@@ -218,9 +218,9 @@ export default function StoreScreen() {
                           color={canAfford ? item.color : ''}
                           className="w-full"
                           onClick={() => handleBuy(item)}
-                          disabled={!canAfford}
+                          disabled={!canAfford || isOneTimeUsed}
                         >
-                          {canAfford ? `BUY FOR ${item.cost} CR` : `NEED ${item.cost - state.creds} MORE CR`}
+                          {isOneTimeUsed ? 'ONE-TIME PURCHASE COMPLETE' : canAfford ? `BUY FOR ${item.cost} CR` : `NEED ${item.cost - state.creds} MORE CR`}
                         </MilButton>
                       </div>
                     )}
@@ -234,17 +234,17 @@ export default function StoreScreen() {
               <div className="mil-card p-3 text-center">
                 <div className="text-lg mb-1">🎯</div>
                 <div className="text-xs text-yellow-400 font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>MISSIONS</div>
-                <div className="text-[10px] text-slate-500">Score ÷ 2 = credits</div>
+                <div className="text-[10px] text-slate-500">Score ÷ 5 = credits</div>
               </div>
               <div className="mil-card p-3 text-center">
                 <div className="text-lg mb-1">📅</div>
                 <div className="text-xs text-yellow-400 font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>DAILY</div>
-                <div className="text-[10px] text-slate-500">+50 CR per day</div>
+                <div className="text-[10px] text-slate-500">+15 CR per day</div>
               </div>
               <div className="mil-card p-3 text-center">
                 <div className="text-lg mb-1">🎮</div>
                 <div className="text-xs text-yellow-400 font-bold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>MINI-GAMES</div>
-                <div className="text-[10px] text-slate-500">Win for bonus CR</div>
+                <div className="text-[10px] text-slate-500">Score ÷ 3</div>
               </div>
             </div>
           </>
