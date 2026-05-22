@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilCard, MilButton, MilTag } from '../../components/GameUI';
 import { toast } from 'sonner';
+import { minigameCreditReward } from '../../lib/gameplayUtils';
 
 // ─── Figarelli Tic-Tac-Toe ──────────────────────────────────────────────────
 // LTC Figarelli uses unnecessarily large words. Win for 35 CR.
@@ -927,7 +928,7 @@ const GAMES = [
   { id: 'math', name: 'MATH SPRINT', emoji: '🧮', desc: '60-second sustainment math blitz. Streak multiplier.', color: 'green', difficulty: 'HARD' },
   { id: 'ttt', name: 'TIC-TAC-TOE vs FIGARELLI', emoji: '⭕', desc: 'Beat LTC Figarelli. He will use unnecessarily large words.', color: 'cyan', difficulty: 'EASY' },
   { id: 'timing', name: 'TIMING CHALLENGE', emoji: '⏱️', desc: 'Stop the timer at the exact target time.', color: 'gold', difficulty: 'MEDIUM' },
-  { id: 'bash', name: 'BASH RESOURCE BATTLE', emoji: '♟️', desc: 'Outmaneuver SSG Bash. He quotes historic generals. Win for 60 CR.', color: 'orange', difficulty: 'MEDIUM' },
+  { id: 'bash', name: 'BASH RESOURCE BATTLE', emoji: '♟️', desc: 'Outmaneuver SSG Bash. He quotes historic generals. Win for a small credit payout.', color: 'orange', difficulty: 'MEDIUM' },
 ] as const;
 
 type GameId = typeof GAMES[number]['id'];
@@ -939,9 +940,10 @@ export default function MinigameScreen() {
 
   function handleScore(s: number) {
     if (s > 0) {
-      dispatch({ type: 'ADD_CREDS', amount: s });
+      const credits = minigameCreditReward(s);
+      dispatch({ type: 'ADD_CREDS', amount: credits });
       dispatch({ type: 'ADD_XP', amount: Math.ceil(s / 2) });
-      setTotalEarned(t => t + s);
+      setTotalEarned(t => t + credits);
     }
   }
 
