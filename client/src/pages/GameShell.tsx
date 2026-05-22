@@ -1,6 +1,7 @@
 import { useGame } from '../contexts/GameContext';
 import TitleScreen from './screens/TitleScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import AvatarScreen from './screens/AvatarScreen';
 import HubScreen from './screens/HubScreen';
 import MissionScreen from './screens/MissionScreen';
 import ResultScreen from './screens/ResultScreen';
@@ -31,6 +32,7 @@ export default function GameShell() {
   const screens: Record<string, React.ReactNode> = {
     title: <TitleScreen />,
     register: <RegisterScreen />,
+    avatar: <AvatarScreen />,
     hub: <HubScreen />,
     mission: <MissionScreen />,
     result: <ResultScreen />,
