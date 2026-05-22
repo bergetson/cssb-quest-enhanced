@@ -6,6 +6,7 @@ import {
 import { DIFFS } from '../../lib/gameData';
 import { calculateCampaignScore } from '../../lib/leaderboard';
 import { ChaosMeter } from '../../components/ChaosOverlay';
+import PixelSoldierAvatar from '../../components/PixelSoldierAvatar';
 
 const MISSIONS = [
   { id: 'm1',  title: 'MISSION 1',  name: 'WARNO DROP',            sub: 'Receipt of mission, time analysis, initial WARNO',         color: 'cyan',   icon: '📡', xp: 80,  diff: 'CRAWL' },
@@ -26,6 +27,7 @@ const TOOLS = [
   { id: 'dsca',        label: 'DSCA MISSIONS',       icon: 'DS', color: 'cyan',   desc: 'Wildfire, flood, SAR, shelter, water & road support missions' },
   { id: 'convoy',      label: 'CONVOY PLANNER',      icon: 'CV', color: 'orange', desc: 'Build convoy plans, brief risk, execute through friction' },
   { id: 'new_soldier', label: 'NEW SOLDIER PATH',    icon: 'NS', color: 'purple', desc: 'Interactive onboarding for unit basics, staff, reports & field habits' },
+  { id: 'avatar',      label: 'AVATAR BUILDER',      icon: 'AV', color: 'cyan',   desc: 'Customize your 8-bit staff officer and equipped shop cosmetics' },
   { id: 'daily',       label: 'DAILY CHALLENGE', icon: '📅', color: 'gold',   desc: 'New question every day. Bonus XP.' },
   { id: 'store',       label: 'SUPPLY DEPOT',    icon: '🏪', color: 'orange', desc: 'Spend credits on power-ups & items' },
   { id: 'ref',         label: 'REFERENCE',       icon: '📚', color: 'cyan',   desc: 'MDMP, doctrine, classes of supply' },
@@ -80,7 +82,15 @@ export default function HubScreen() {
             backgroundSize: '12px 12px',
           }} />
           <div className="relative flex items-start justify-between gap-4 flex-wrap">
-            <div>
+            <div className="flex items-start gap-4 min-w-0 flex-1">
+              <button
+                onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'avatar' })}
+                className="avatar-hub-button"
+                aria-label="Open avatar builder"
+              >
+                <PixelSoldierAvatar avatar={state.avatar} cosmeticId={state.activeCosmeticId} chaos={state.chaosMeter} size="md" />
+              </button>
+              <div className="min-w-0">
               <div className="text-[10px] text-yellow-400/60 mono tracking-[0.2em] mb-1">// SOLDIER PROFILE — {diff.name} MODE</div>
               <h2 className="text-3xl font-black text-yellow-400 tracking-wide glow-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                 {state.player?.rank} {state.player?.name}
@@ -92,6 +102,12 @@ export default function HubScreen() {
                 <span className="text-xs text-yellow-400 mono font-bold">💰 {state.creds} CR</span>
                 <span className="text-xs text-cyan-400 mono">⚡ LVL {state.level}</span>
                 <span className="text-xs text-emerald-400 mono">🏆 {campaignScore.total} BOARD PTS</span>
+              </div>
+              <div className="mt-3">
+                <MilButton color="cyan" size="sm" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'avatar' })}>
+                  EDIT AVATAR
+                </MilButton>
+              </div>
               </div>
             </div>
             <div className="min-w-[200px]">
