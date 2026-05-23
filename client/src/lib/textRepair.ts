@@ -1,4 +1,7 @@
-const MOJIBAKE_RE = /[ÃÂâð][\u0080-\u00ff\u2018-\u201d\u2020-\u2026\u2030\u20ac\u2122]*/;
+const MOJIBAKE_START = '[\\u00c3\\u00c2\\u00e2\\u00f0]';
+const MOJIBAKE_CONTINUE = '[\\u0080-\\u00ff\\u2018-\\u201d\\u2020-\\u2026\\u2030\\u20ac\\u2122]';
+const MOJIBAKE_RE = new RegExp(`${MOJIBAKE_START}${MOJIBAKE_CONTINUE}*`);
+const MOJIBAKE_SEQUENCE_RE = new RegExp(`${MOJIBAKE_START}${MOJIBAKE_CONTINUE}+`, 'g');
 
 const WINDOWS_1252_BYTES: Record<number, number> = {
   0x20ac: 0x80,
@@ -57,7 +60,7 @@ function repairTextNode(node: Text) {
   const original = node.nodeValue || '';
   if (!MOJIBAKE_RE.test(original)) return;
 
-  const repaired = original.replace(/[ÃÂâð][\u0080-\u00ff\u2018-\u201d\u2020-\u2026\u2030\u20ac\u2122]+/g, repairMojibake);
+  const repaired = original.replace(MOJIBAKE_SEQUENCE_RE, repairMojibake);
   if (repaired !== original) node.nodeValue = repaired;
 }
 
