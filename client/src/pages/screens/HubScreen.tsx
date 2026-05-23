@@ -7,18 +7,35 @@ import { DIFFS } from '../../lib/gameData';
 import { calculateCampaignScore } from '../../lib/leaderboard';
 import { ChaosMeter } from '../../components/ChaosOverlay';
 import PixelSoldierAvatar from '../../components/PixelSoldierAvatar';
+import {
+  BookOpen,
+  Calculator,
+  CalendarDays,
+  Gamepad2,
+  NotebookTabs,
+  Radar,
+  ShieldPlus,
+  Siren,
+  Store,
+  Trophy,
+  Truck,
+  UserCog,
+  UserRoundPlus,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 
 const MISSIONS = [
-  { id: 'm1',  title: 'MISSION 1',  name: 'WARNO DROP',            sub: 'Receipt of mission, time analysis, initial WARNO',         color: 'cyan',   icon: '📡', xp: 80,  diff: 'CRAWL' },
-  { id: 'm2',  title: 'MISSION 2',  name: 'MISSION ANALYSIS LAB',  sub: 'Facts, assumptions, constraints, running estimate',         color: 'purple', icon: '🔍', xp: 100, diff: 'CRAWL' },
-  { id: 'm3',  title: 'MISSION 3',  name: 'CLASS I AND WATER',     sub: 'Meals, MRE cases, water gallons, reserve, pallet math',     color: 'green',  icon: '🍱', xp: 120, diff: 'WALK'  },
-  { id: 'm4',  title: 'MISSION 4',  name: 'FUEL AND CONVOY',       sub: 'Class III, vehicle miles, mixed fleet, convoy cycle time',  color: 'orange', icon: '⛽', xp: 120, diff: 'WALK'  },
-  { id: 'm5',  title: 'MISSION 5',  name: 'CLASS V AND DODAC',     sub: 'Ammo by weapon system, rounds, reserve, packaging',        color: 'red',    icon: '💥', xp: 140, diff: 'WALK'  },
-  { id: 'm6',  title: 'MISSION 6',  name: 'LOGPAC LOADMASTER',     sub: 'Pallets, lift capacity, priority of support, risk',        color: 'cyan',   icon: '🚛', xp: 140, diff: 'RUN'   },
-  { id: 'm7',  title: 'MISSION 7',  name: 'PACE AND LOGSTAT',      sub: 'Communication plans, LOGSTAT interpretation, CCIR',        color: 'purple', icon: '📻', xp: 160, diff: 'RUN'   },
-  { id: 'm8',  title: 'MISSION 8',  name: 'COA WARGAME',           sub: 'COA analysis, weighted scoring, friction, recommendations', color: 'gold',   icon: '♟️', xp: 180, diff: 'RUN'   },
-  { id: 'm9',  title: 'MISSION 9',  name: 'FRAGORD AND OPORD',     sub: 'Orders production, sustainment annex, update discipline',  color: 'lime',   icon: '📋', xp: 180, diff: 'HARD'  },
-  { id: 'm10', title: 'MISSION 10', name: 'MDMP NIGHTMARE FINAL',  sub: 'Full staff qualification final — no mercy, no hints',      color: 'red',    icon: '🔥', xp: 250, diff: 'HARD'  },
+  { id: 'm1',  title: 'MISSION 1',  name: 'WARNO DROP',            sub: 'Receipt of mission, time analysis, initial WARNO',         color: 'cyan',   icon: 'ðŸ“¡', xp: 80,  diff: 'CRAWL' },
+  { id: 'm2',  title: 'MISSION 2',  name: 'MISSION ANALYSIS LAB',  sub: 'Facts, assumptions, constraints, running estimate',         color: 'purple', icon: 'ðŸ”', xp: 100, diff: 'CRAWL' },
+  { id: 'm3',  title: 'MISSION 3',  name: 'CLASS I AND WATER',     sub: 'Meals, MRE cases, water gallons, reserve, pallet math',     color: 'green',  icon: 'ðŸ±', xp: 120, diff: 'WALK'  },
+  { id: 'm4',  title: 'MISSION 4',  name: 'FUEL AND CONVOY',       sub: 'Class III, vehicle miles, mixed fleet, convoy cycle time',  color: 'orange', icon: 'â›½', xp: 120, diff: 'WALK'  },
+  { id: 'm5',  title: 'MISSION 5',  name: 'CLASS V AND DODAC',     sub: 'Ammo by weapon system, rounds, reserve, packaging',        color: 'red',    icon: 'ðŸ’¥', xp: 140, diff: 'WALK'  },
+  { id: 'm6',  title: 'MISSION 6',  name: 'LOGPAC LOADMASTER',     sub: 'Pallets, lift capacity, priority of support, risk',        color: 'cyan',   icon: 'ðŸš›', xp: 140, diff: 'RUN'   },
+  { id: 'm7',  title: 'MISSION 7',  name: 'PACE AND LOGSTAT',      sub: 'Communication plans, LOGSTAT interpretation, CCIR',        color: 'purple', icon: 'ðŸ“»', xp: 160, diff: 'RUN'   },
+  { id: 'm8',  title: 'MISSION 8',  name: 'COA WARGAME',           sub: 'COA analysis, weighted scoring, friction, recommendations', color: 'gold',   icon: 'â™Ÿï¸', xp: 180, diff: 'RUN'   },
+  { id: 'm9',  title: 'MISSION 9',  name: 'FRAGORD AND OPORD',     sub: 'Orders production, sustainment annex, update discipline',  color: 'lime',   icon: 'ðŸ“‹', xp: 180, diff: 'HARD'  },
+  { id: 'm10', title: 'MISSION 10', name: 'MDMP NIGHTMARE FINAL',  sub: 'Full staff qualification final â€” no mercy, no hints',      color: 'red',    icon: 'ðŸ”¥', xp: 250, diff: 'HARD'  },
 ];
 
 const TOOLS = [
@@ -28,15 +45,32 @@ const TOOLS = [
   { id: 'convoy',      label: 'CONVOY PLANNER',      icon: 'CV', color: 'orange', desc: 'Build convoy plans, brief risk, execute through friction' },
   { id: 'new_soldier', label: 'NEW SOLDIER PATH',    icon: 'NS', color: 'purple', desc: 'Interactive onboarding for unit basics, staff, reports & field habits' },
   { id: 'avatar',      label: 'AVATAR BUILDER',      icon: 'AV', color: 'cyan',   desc: 'Customize your 8-bit staff officer and equipped shop cosmetics' },
-  { id: 'daily',       label: 'DAILY CHALLENGE', icon: '📅', color: 'gold',   desc: 'New question every day. Bonus XP.' },
-  { id: 'store',       label: 'SUPPLY DEPOT',    icon: '🏪', color: 'orange', desc: 'Spend credits on power-ups & items' },
-  { id: 'ref',         label: 'REFERENCE',       icon: '📚', color: 'cyan',   desc: 'MDMP, doctrine, classes of supply' },
-  { id: 'calc',        label: 'SPO CALCULATOR',  icon: '🧮', color: 'green',  desc: 'Class I/III/V commodity calculators' },
-  { id: 'roles',       label: 'STAFF ROLES',     icon: '👥', color: 'purple', desc: 'Staff section quiz & reference' },
-  { id: 'minigame',    label: 'MINI GAMES',      icon: '🎮', color: 'lime',   desc: 'Convoy, trivia, math sprint & more' },
-  { id: 'notebook',    label: 'NOTEBOOK',        icon: '📓', color: 'cyan',   desc: 'Your AAR notes & teaching points' },
-  { id: 'leaderboard', label: 'LEADERBOARD',     icon: '🏆', color: 'gold',   desc: 'Campaign stats, badges & history' },
+  { id: 'daily',       label: 'DAILY CHALLENGE', icon: 'ðŸ“…', color: 'gold',   desc: 'New question every day. Bonus XP.' },
+  { id: 'store',       label: 'SUPPLY DEPOT',    icon: 'ðŸª', color: 'orange', desc: 'Spend credits on power-ups & items' },
+  { id: 'ref',         label: 'REFERENCE',       icon: 'ðŸ“š', color: 'cyan',   desc: 'MDMP, doctrine, classes of supply' },
+  { id: 'calc',        label: 'SPO CALCULATOR',  icon: 'ðŸ§®', color: 'green',  desc: 'Class I/III/V commodity calculators' },
+  { id: 'roles',       label: 'STAFF ROLES',     icon: 'ðŸ‘¥', color: 'purple', desc: 'Staff section quiz & reference' },
+  { id: 'minigame',    label: 'MINI GAMES',      icon: 'ðŸŽ®', color: 'lime',   desc: 'Convoy, trivia, math sprint & more' },
+  { id: 'notebook',    label: 'NOTEBOOK',        icon: 'ðŸ““', color: 'cyan',   desc: 'Your AAR notes & teaching points' },
+  { id: 'leaderboard', label: 'LEADERBOARD',     icon: 'ðŸ†', color: 'gold',   desc: 'Campaign stats, badges & history' },
 ];
+
+const TOOL_ICONS: Record<string, LucideIcon> = {
+  warrior: ShieldPlus,
+  opfor: Radar,
+  dsca: Siren,
+  convoy: Truck,
+  new_soldier: UserRoundPlus,
+  avatar: UserCog,
+  daily: CalendarDays,
+  store: Store,
+  ref: BookOpen,
+  calc: Calculator,
+  roles: Users,
+  minigame: Gamepad2,
+  notebook: NotebookTabs,
+  leaderboard: Trophy,
+};
 
 const DIFF_COLORS: Record<string, string> = {
   CRAWL: 'text-emerald-400',
@@ -75,14 +109,14 @@ export default function HubScreen() {
       <div className="max-w-4xl mx-auto px-4 py-6">
 
         {/* Player Header */}
-        <div className="mil-card mil-card-gold p-5 mb-5 animate-fade-in-up relative overflow-hidden">
+        <div className="mil-card mil-card-gold player-profile-card p-5 mb-5 animate-fade-in-up relative overflow-hidden">
           {/* Background accent */}
           <div className="absolute inset-0 opacity-5" style={{
             backgroundImage: 'repeating-linear-gradient(45deg, oklch(0.78 0.15 85) 0, oklch(0.78 0.15 85) 1px, transparent 0, transparent 50%)',
             backgroundSize: '12px 12px',
           }} />
-          <div className="relative flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-4 min-w-0 flex-1">
+          <div className="player-profile-layout relative flex items-start justify-between gap-4 flex-wrap">
+            <div className="player-profile-main flex items-start gap-4 min-w-0 flex-1">
               <button
                 onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'avatar' })}
                 className="avatar-hub-button"
@@ -90,18 +124,18 @@ export default function HubScreen() {
               >
                 <PixelSoldierAvatar avatar={state.avatar} cosmeticId={state.activeCosmeticId} chaos={state.chaosMeter} size="md" />
               </button>
-              <div className="min-w-0">
-              <div className="text-[10px] text-yellow-400/60 mono tracking-[0.2em] mb-1">// SOLDIER PROFILE — {diff.name} MODE</div>
-              <h2 className="text-3xl font-black text-yellow-400 tracking-wide glow-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+              <div className="player-profile-copy min-w-0">
+              <div className="text-[10px] text-yellow-400/60 mono tracking-[0.2em] mb-1">// SOLDIER PROFILE â€” {diff.name} MODE</div>
+              <h2 className="player-name text-3xl font-black text-yellow-400 tracking-wide glow-gold" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                 {state.player?.rank} {state.player?.name}
               </h2>
               <div className="text-sm text-slate-400 mb-2">{state.player?.unit}</div>
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="player-meta-row flex items-center gap-3 flex-wrap">
                 <StreakBadge />
                 <span className="text-xs text-slate-500 mono">{completedCount}/{totalMissions} missions complete</span>
-                <span className="text-xs text-yellow-400 mono font-bold">💰 {state.creds} CR</span>
-                <span className="text-xs text-cyan-400 mono">⚡ LVL {state.level}</span>
-                <span className="text-xs text-emerald-400 mono">🏆 {campaignScore.total} BOARD PTS</span>
+                <span className="text-xs text-yellow-400 mono font-bold">ðŸ’° {state.creds} CR</span>
+                <span className="text-xs text-cyan-400 mono">âš¡ LVL {state.level}</span>
+                <span className="text-xs text-emerald-400 mono">ðŸ† {campaignScore.total} BOARD PTS</span>
               </div>
               <div className="mt-3">
                 <MilButton color="cyan" size="sm" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'avatar' })}>
@@ -110,7 +144,7 @@ export default function HubScreen() {
               </div>
               </div>
             </div>
-            <div className="min-w-[200px]">
+            <div className="player-profile-stats min-w-[200px]">
               <XPBar />
               <div className="mt-3 grid grid-cols-2 gap-1.5">
                 <StatBar label="CMD" value={state.stats.cmd} color="gold" />
@@ -145,7 +179,7 @@ export default function HubScreen() {
             className="flex-1 mil-card p-3 hover:-translate-y-0.5 transition-transform text-left"
           >
             <div className="flex items-center gap-2">
-              <span className="text-xl">🏆</span>
+              <span className="text-xl">ðŸ†</span>
               <div>
                 <div className="text-xs font-bold text-yellow-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>ACHIEVEMENTS</div>
                 <div className="text-[10px] text-slate-500 mono">{achievementCount} unlocked</div>
@@ -154,10 +188,10 @@ export default function HubScreen() {
           </button>
           {state.candyCount > 0 && (
             <div className="mil-card p-3 flex items-center gap-2">
-              <span className="text-xl">🍬</span>
+              <span className="text-xl">ðŸ¬</span>
               <div>
                 <div className="text-xs font-bold text-pink-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>CANDY</div>
-                <div className="text-[10px] text-slate-500 mono">×{state.candyCount}</div>
+                <div className="text-[10px] text-slate-500 mono">Ã—{state.candyCount}</div>
               </div>
             </div>
           )}
@@ -167,7 +201,7 @@ export default function HubScreen() {
               className="flex-1 mil-card mil-card-red p-3 hover:-translate-y-0.5 transition-transform text-left animate-pulse-glow"
             >
               <div className="flex items-center gap-2">
-                <span className="text-xl">📊</span>
+                <span className="text-xl">ðŸ“Š</span>
                 <div>
                   <div className="text-xs font-bold text-red-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>BOSS BATTLE</div>
                   <div className="text-[10px] text-slate-500 mono">CPT PowerPoint awaits</div>
@@ -177,7 +211,7 @@ export default function HubScreen() {
           )}
           {pptBossDefeated && (
             <div className="mil-card p-3 flex items-center gap-2">
-              <span className="text-xl">📊</span>
+              <span className="text-xl">ðŸ“Š</span>
               <div>
                 <div className="text-xs font-bold text-green-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>PPT DEFEATED</div>
                 <div className="text-[10px] text-slate-500 mono">Slides vanquished</div>
@@ -188,7 +222,7 @@ export default function HubScreen() {
 
         {/* Scenario Info Bar */}
         <div className="info-box mb-5 animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
-          <div className="text-[10px] text-cyan-400/80 mono tracking-[0.2em] mb-2">// ACTIVE SCENARIO: {s.code} — OPERATION {state.challenge}</div>
+          <div className="text-[10px] text-cyan-400/80 mono tracking-[0.2em] mb-2">// ACTIVE SCENARIO: {s.code} â€” OPERATION {state.challenge}</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
               <div className="text-slate-600 mono text-[10px] mb-0.5">PERSONNEL</div>
@@ -217,18 +251,18 @@ export default function HubScreen() {
             onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'daily' })}
           >
             <div className="flex items-center gap-3">
-              <div className="text-3xl">📅</div>
+              <div className="text-3xl">ðŸ“…</div>
               <div className="flex-1">
                 <div className="text-sm font-bold text-yellow-400" style={{ fontFamily: 'Rajdhani, sans-serif' }}>DAILY CHALLENGE AVAILABLE</div>
                 <div className="text-xs text-slate-500">Complete today's challenge for bonus XP and credits</div>
               </div>
-              <MilTag color="gold">GO →</MilTag>
+              <MilTag color="gold">GO â†’</MilTag>
             </div>
           </div>
         )}
 
         {/* Campaign Missions */}
-        <SectionTitle color="gold" sub={`${diff.name} difficulty — ${completedCount}/${totalMissions} complete`}>
+        <SectionTitle color="gold" sub={`${diff.name} difficulty â€” ${completedCount}/${totalMissions} complete`}>
           CAMPAIGN MISSIONS
         </SectionTitle>
 
@@ -256,7 +290,7 @@ export default function HubScreen() {
                     isLocked    ? 'bg-slate-800 border border-white/5' :
                     `bg-${m.color}-400/10 border border-${m.color}-400/30`
                   }`}>
-                    {isLocked ? '🔒' : isCompleted ? '✅' : m.icon}
+                    {isLocked ? 'ðŸ”’' : isCompleted ? 'âœ…' : m.icon}
                   </div>
 
                   {/* Content */}
@@ -266,7 +300,7 @@ export default function HubScreen() {
                       <span className={`text-[10px] mono font-bold ${DIFF_COLORS[m.diff] || 'text-slate-500'}`}>{m.diff}</span>
                       {rec && <GradeBadge grade={rec.grade} />}
                       {isNext && !isCompleted && (
-                        <span className="mil-tag mil-tag-cyan" style={{ fontSize: '0.6rem' }}>▶ NEXT</span>
+                        <span className="mil-tag mil-tag-cyan" style={{ fontSize: '0.6rem' }}>â–¶ NEXT</span>
                       )}
                     </div>
                     <div className="text-sm font-bold text-slate-200" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
@@ -282,7 +316,7 @@ export default function HubScreen() {
                         <div className={`font-bold ${rec.grade === 'GOLD' ? 'text-yellow-400' : rec.grade === 'SILVER' ? 'text-cyan-400' : rec.grade === 'BRONZE' ? 'text-orange-400' : 'text-red-400'}`}>
                           {rec.score}/{rec.max}
                         </div>
-                        <div className="text-slate-600 text-[10px]">{rec.attempts}× played</div>
+                        <div className="text-slate-600 text-[10px]">{rec.attempts}Ã— played</div>
                       </div>
                     ) : (
                       <div className="text-xs text-yellow-400/70 mono">+{m.xp} XP</div>
@@ -300,13 +334,16 @@ export default function HubScreen() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {TOOLS.map(t => {
             const isDailyDone = t.id === 'daily' && !dailyAvailable;
+            const ToolIcon = TOOL_ICONS[t.id] || Gamepad2;
             return (
               <button
                 key={t.id}
                 onClick={() => dispatch({ type: 'SET_SCREEN', screen: t.id as any })}
-                className={`mil-card p-4 text-left hover:-translate-y-0.5 transition-transform ${isDailyDone ? 'opacity-40' : ''}`}
+                className={`mil-card tool-card p-4 text-left hover:-translate-y-0.5 transition-transform ${isDailyDone ? 'opacity-40' : ''}`}
               >
-                <div className="text-2xl mb-2">{t.icon}</div>
+                <div className={`tool-card-icon tool-card-icon-${t.color}`} aria-hidden="true">
+                  <ToolIcon size={22} strokeWidth={2.3} />
+                </div>
                 <div className={`text-xs font-bold tracking-wide text-${t.color}-400 mb-1`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>
                   {t.label}
                   {t.id === 'daily' && dailyAvailable && (
@@ -326,37 +363,37 @@ export default function HubScreen() {
             <div className="flex flex-wrap gap-2">
               {state.rayCards > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-400/30 bg-purple-400/8">
-                  <span>🕶️</span>
-                  <span className="text-xs text-purple-300 mono">Ray Cards ×{state.rayCards}</span>
+                  <span>ðŸ•¶ï¸</span>
+                  <span className="text-xs text-purple-300 mono">Ray Cards Ã—{state.rayCards}</span>
                 </div>
               )}
               {state.mercyCards > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-400/30 bg-cyan-400/8">
-                  <span>🃏</span>
-                  <span className="text-xs text-cyan-300 mono">Mercy ×{state.mercyCards}</span>
+                  <span>ðŸƒ</span>
+                  <span className="text-xs text-cyan-300 mono">Mercy Ã—{state.mercyCards}</span>
                 </div>
               )}
               {state.redbull > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-400/30 bg-red-400/8">
-                  <span>🔴</span>
-                  <span className="text-xs text-red-300 mono">Red Bull ×{state.redbull}</span>
+                  <span>ðŸ”´</span>
+                  <span className="text-xs text-red-300 mono">Red Bull Ã—{state.redbull}</span>
                 </div>
               )}
               {state.e4 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-lime-400/30 bg-lime-400/8">
-                  <span>🤝</span>
+                  <span>ðŸ¤</span>
                   <span className="text-xs text-lime-300 mono">E4 Mafia Active</span>
                 </div>
               )}
               {state.candyCount > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-pink-400/30 bg-pink-400/8">
-                  <span>🍬</span>
-                  <span className="text-xs text-pink-300 mono">Candy ×{state.candyCount}</span>
+                  <span>ðŸ¬</span>
+                  <span className="text-xs text-pink-300 mono">Candy Ã—{state.candyCount}</span>
                 </div>
               )}
               {state.activeCosmeticId && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-yellow-400/30 bg-yellow-400/8">
-                  <span>✨</span>
+                  <span>âœ¨</span>
                   <span className="text-xs text-yellow-300 mono">Cosmetic: {state.activeCosmeticId.replace(/_/g, ' ')}</span>
                 </div>
               )}
@@ -368,11 +405,11 @@ export default function HubScreen() {
         {completedCount >= 5 && (
           <div className="grid grid-cols-2 gap-3 mb-5">
             <MilButton color="gold" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'certificate' })}>
-              🏅 CERTIFICATE
+              ðŸ… CERTIFICATE
             </MilButton>
             {state.secret && (
               <MilButton color="purple" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'secret' })}>
-                🔒 SECRET ENDING
+                ðŸ”’ SECRET ENDING
               </MilButton>
             )}
           </div>
