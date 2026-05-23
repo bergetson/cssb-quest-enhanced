@@ -60,11 +60,11 @@ export default function TitleScreen() {
           CSSB QUEST
         </h1>
         <div className="text-cyan-400 text-sm tracking-widest mono mb-1">STAFF OFFICER TRAINING SYSTEM</div>
-        <div className="text-slate-600 text-xs mono mb-8">v2.0 â€” ENHANCED EDITION</div>
+        <div className="text-slate-600 text-xs mono mb-8">v2.0 - ENHANCED EDITION</div>
 
         {/* Status bar */}
         <div className="title-status-bar flex justify-center gap-4 mb-6 text-xs mono text-slate-600">
-          <span className="text-emerald-500">â— SYSTEM ONLINE</span>
+          <span className="text-emerald-500">SYSTEM ONLINE</span>
           <span>|</span>
           <span>{new Date().toLocaleTimeString()}</span>
           <span>|</span>
@@ -90,7 +90,7 @@ export default function TitleScreen() {
           {hasPlayer ? (
             <>
               <MilButton color="gold" size="lg" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'hub' })}>
-                â–¶ CONTINUE â€” {state.player!.rank} {state.player!.name}
+                CONTINUE - {state.player!.rank} {state.player!.name}
               </MilButton>
               <MilButton color="cyan" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'register' })}>
                 NEW SOLDIER
@@ -98,22 +98,22 @@ export default function TitleScreen() {
             </>
           ) : (
             <MilButton color="gold" size="lg" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'register' })}>
-              â–¶ BEGIN TRAINING
+              BEGIN TRAINING
             </MilButton>
           )}
           <div className="grid grid-cols-2 gap-3">
             <MilButton color="cyan" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'ref' })}>
-              ðŸ“š REFERENCE
+              REFERENCE
             </MilButton>
             <MilButton color="green" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'calc' })}>
-              ðŸ§® CALCULATOR
+              CALCULATOR
             </MilButton>
           </div>
         </div>
 
         {/* Footer */}
         <div className="title-footer mt-8 text-[10px] text-slate-700 mono tracking-widest">
-          495 CSSB â€” THE PREMIER CSSB â€” STAFF EXCELLENCE â€” DEV BY CPT BERGET
+          495 CSSB - THE PREMIER CSSB - STAFF EXCELLENCE - DEV BY CPT BERGET
         </div>
       </div>
     </div>
