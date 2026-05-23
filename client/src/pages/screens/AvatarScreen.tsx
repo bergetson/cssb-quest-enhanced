@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Shuffle, RotateCcw, Save, X } from 'lucide-react';
 import { useGame } from '../../contexts/GameContext';
 import { MilButton, MilCard, MilTag, ScreenWrap, SectionTitle } from '../../components/GameUI';
 import PixelSoldierAvatar from '../../components/PixelSoldierAvatar';
@@ -36,7 +37,7 @@ const options: {
   uniform: [
     { value: 'ocp', label: 'OCP' },
     { value: 'pt', label: 'PT Gear' },
-    { value: 'dress', label: 'Dress Uniform' },
+    { value: 'dress', label: 'Dress' },
     { value: 'field', label: 'Field Kit' },
   ],
   patch: [
@@ -52,8 +53,18 @@ const options: {
     { value: 'toc', label: 'TOC' },
     { value: 'motorpool', label: 'Motor Pool' },
     { value: 'field', label: 'Field Site' },
-    { value: 'mountains', label: 'Montana Mountains' },
+    { value: 'mountains', label: 'Montana' },
   ],
+};
+
+const optionLabels: Record<keyof AvatarConfig, string> = {
+  body: 'Skin Tone',
+  hair: 'Hair Color',
+  hairStyle: 'Hair Style',
+  face: 'Face',
+  uniform: 'Uniform',
+  patch: 'Patch',
+  backdrop: 'Backdrop',
 };
 
 const randomPick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
@@ -63,6 +74,7 @@ export default function AvatarScreen() {
   const [draft, setDraft] = useState<AvatarConfig>(state.avatar || defaultAvatar());
 
   const stressPreview = useMemo(() => Math.max(state.chaosMeter, state.stats.chaos), [state.chaosMeter, state.stats.chaos]);
+  const statusLabel = stressPreview >= 70 ? 'STRESSED' : stressPreview >= 40 ? 'BUSY' : 'STEADY';
 
   function randomize() {
     setDraft({
@@ -88,51 +100,71 @@ export default function AvatarScreen() {
         earnedAt: Date.now(),
       },
     });
-    toast.success('Avatar saved. Cosmetics from the shop will show up on your character.');
+    toast.success('Avatar saved. Equipped shop cosmetics now show on your portrait.');
     dispatch({ type: 'SET_SCREEN', screen: 'hub' });
   }
 
   return (
     <ScreenWrap>
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="avatar-screen max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'hub' })} className="text-xs text-slate-500 mono mb-4 hover:text-slate-300 transition-colors">
           BACK TO HUB
         </button>
 
-        <SectionTitle color="gold" sub="Build your 8-bit staff officer. Shop cosmetics change the portrait in the header and hub.">
+        <SectionTitle color="gold" sub="Build your 8-bit staff officer. Shop items update the portrait when equipped.">
           AVATAR BUILDER
         </SectionTitle>
 
-        <div className="grid lg:grid-cols-[320px_1fr] gap-5">
-          <MilCard color="gold" className="p-5 sticky top-24 self-start">
-            <div className="text-[10px] mono tracking-[0.2em] text-yellow-400/70 mb-3">// SOLDIER PREVIEW</div>
-            <PixelSoldierAvatar
-              avatar={draft}
-              cosmeticId={state.activeCosmeticId}
-              chaos={stressPreview}
-              size="lg"
-              showLabel
-            />
-            <div className="grid grid-cols-2 gap-2 mt-5">
-              <MilButton color="cyan" onClick={randomize}>RANDOMIZE</MilButton>
-              <MilButton onClick={() => setDraft(defaultAvatar())}>RESET</MilButton>
-            </div>
-            <div className="info-box mt-4">
-              <div className="text-[10px] mono tracking-[0.16em] text-cyan-300 mb-1">// LIVE STATUS</div>
-              High chaos makes your avatar look stressed. Useful, silly, and cosmetic shop items appear here after you equip them.
+        <div className="avatar-builder-layout">
+          <MilCard color="gold" className="avatar-preview-card">
+            <div className="avatar-preview-mobile-row">
+              <div className="avatar-preview-main">
+                <PixelSoldierAvatar
+                  avatar={draft}
+                  cosmeticId={state.activeCosmeticId}
+                  chaos={stressPreview}
+                  size="lg"
+                  showLabel
+                />
+              </div>
+
+              <div className="avatar-preview-meta">
+                <div className="text-[10px] mono tracking-[0.2em] text-yellow-400/70 mb-2">// SOLDIER PREVIEW</div>
+                <div className="text-2xl font-black text-yellow-400 leading-none" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                  {state.player?.rank || 'CPT'} {state.player?.name || 'PLAYER'}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">{state.player?.unit || '495 CSSB'}</div>
+
+                <div className="avatar-tag-row">
+                  <MilTag color="gold">{draft.uniform.toUpperCase()}</MilTag>
+                  <MilTag color={stressPreview >= 70 ? 'red' : stressPreview >= 40 ? 'orange' : 'cyan'}>{statusLabel}</MilTag>
+                  {state.activeCosmeticId && <MilTag color="purple">{state.activeCosmeticId.replace(/_/g, ' ').toUpperCase()}</MilTag>}
+                </div>
+
+                <div className="avatar-preview-actions">
+                  <button type="button" className="avatar-icon-button avatar-icon-button-cyan" onClick={randomize} aria-label="Randomize avatar">
+                    <Shuffle size={17} />
+                    <span>RANDOM</span>
+                  </button>
+                  <button type="button" className="avatar-icon-button" onClick={() => setDraft(defaultAvatar())} aria-label="Reset avatar">
+                    <RotateCcw size={17} />
+                    <span>RESET</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </MilCard>
 
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="avatar-control-grid">
             {(Object.keys(options) as (keyof AvatarConfig)[]).map(key => (
-              <MilCard key={key} className="p-4">
+              <MilCard key={key} className="avatar-control-card">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="text-sm font-bold text-slate-200" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
-                    {key.replace(/([A-Z])/g, ' $1').toUpperCase()}
+                    {optionLabels[key].toUpperCase()}
                   </div>
                   <MilTag color="cyan">{String(draft[key]).toUpperCase()}</MilTag>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="avatar-choice-grid">
                   {options[key].map(option => (
                     <button
                       key={String(option.value)}
@@ -148,12 +180,12 @@ export default function AvatarScreen() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-5">
+        <div className="avatar-save-bar">
           <MilButton onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'hub' })}>
-            CANCEL
+            <span className="inline-flex items-center justify-center gap-2"><X size={16} /> CANCEL</span>
           </MilButton>
           <MilButton color="gold" onClick={save}>
-            SAVE AVATAR
+            <span className="inline-flex items-center justify-center gap-2"><Save size={16} /> SAVE AVATAR</span>
           </MilButton>
         </div>
       </div>
