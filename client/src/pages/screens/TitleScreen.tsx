@@ -54,17 +54,17 @@ export default function TitleScreen() {
 
         {/* Title */}
         <h1
-          className={`text-6xl sm:text-7xl font-black tracking-wider text-yellow-400 mb-2 transition-opacity ${glitch ? 'opacity-70' : 'opacity-100'}`}
+          className={`title-logo-text font-black text-yellow-400 mb-2 transition-opacity ${glitch ? 'opacity-70' : 'opacity-100'}`}
           style={{ fontFamily: 'Rajdhani, sans-serif', textShadow: '0 0 60px oklch(0.78 0.15 85 / 50%), 0 0 120px oklch(0.78 0.15 85 / 20%)' }}
         >
           CSSB QUEST
         </h1>
         <div className="text-cyan-400 text-sm tracking-widest mono mb-1">STAFF OFFICER TRAINING SYSTEM</div>
-        <div className="text-slate-600 text-xs mono mb-8">v2.0 — ENHANCED EDITION</div>
+        <div className="text-slate-600 text-xs mono mb-8">v2.0 â€” ENHANCED EDITION</div>
 
         {/* Status bar */}
-        <div className="flex justify-center gap-4 mb-6 text-xs mono text-slate-600">
-          <span className="text-emerald-500">● SYSTEM ONLINE</span>
+        <div className="title-status-bar flex justify-center gap-4 mb-6 text-xs mono text-slate-600">
+          <span className="text-emerald-500">â— SYSTEM ONLINE</span>
           <span>|</span>
           <span>{new Date().toLocaleTimeString()}</span>
           <span>|</span>
@@ -90,7 +90,7 @@ export default function TitleScreen() {
           {hasPlayer ? (
             <>
               <MilButton color="gold" size="lg" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'hub' })}>
-                ▶ CONTINUE — {state.player!.rank} {state.player!.name}
+                â–¶ CONTINUE â€” {state.player!.rank} {state.player!.name}
               </MilButton>
               <MilButton color="cyan" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'register' })}>
                 NEW SOLDIER
@@ -98,22 +98,22 @@ export default function TitleScreen() {
             </>
           ) : (
             <MilButton color="gold" size="lg" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'register' })}>
-              ▶ BEGIN TRAINING
+              â–¶ BEGIN TRAINING
             </MilButton>
           )}
           <div className="grid grid-cols-2 gap-3">
             <MilButton color="cyan" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'ref' })}>
-              📚 REFERENCE
+              ðŸ“š REFERENCE
             </MilButton>
             <MilButton color="green" className="w-full" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'calc' })}>
-              🧮 CALCULATOR
+              ðŸ§® CALCULATOR
             </MilButton>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-[10px] text-slate-700 mono tracking-widest">
-          495 CSSB — THE PREMIER CSSB — STAFF EXCELLENCE — DEV BY CPT BERGET
+        <div className="title-footer mt-8 text-[10px] text-slate-700 mono tracking-widest">
+          495 CSSB â€” THE PREMIER CSSB â€” STAFF EXCELLENCE â€” DEV BY CPT BERGET
         </div>
       </div>
     </div>
