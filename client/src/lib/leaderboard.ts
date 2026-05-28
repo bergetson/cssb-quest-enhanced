@@ -1,4 +1,5 @@
 import { DIFFS, LS_KEY, type Difficulty, type GameState, type MissionRecord } from './gameData';
+import { supabase } from './supabase';
 
 type MissionRecordWithMeta = MissionRecord & { difficulty?: Difficulty; points?: number };
 
@@ -29,7 +30,6 @@ export interface LeaderboardResult {
 }
 
 const LOCAL_KEY = `${LS_KEY}_leaderboard_v2`;
-const API_URL = import.meta.env.VITE_LEADERBOARD_API_URL || '/api/leaderboard';
 
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'staff-officer';
@@ -181,72 +181,146 @@ export function saveLocalEntry(entry: LeaderboardEntry) {
   return merged;
 }
 
-async function fetchJsonEntries(url: string, source: LeaderboardEntry['source']) {
-  const response = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!response.ok) throw new Error(`Leaderboard fetch failed: ${response.status}`);
-  const payload = await response.json();
-  const entries = Array.isArray(payload) ? payload : payload.entries;
-  return Array.isArray(entries) ? entries.map((entry: LeaderboardEntry) => cleanEntry(entry, source)) : [];
+// --- Supabase helpers ---
+
+function toDbRow(entry: LeaderboardEntry) {
+  return {
+    id: entry.id,
+    callsign: entry.callsign,
+    rank: entry.rank,
+    unit: entry.unit,
+    score: entry.score,
+    campaign_pct: entry.campaignPct,
+    missions_completed: entry.missionsCompleted,
+    gold_missions: entry.goldMissions,
+    perfect_missions: entry.perfectMissions,
+    difficulty: entry.difficulty,
+    level: entry.level,
+    xp: entry.xp,
+    achievements: entry.achievements,
+    minigame_points: entry.minigamePoints,
+    challenge: entry.challenge,
+    submitted_at: entry.submittedAt,
+  };
 }
+
+function fromDbRow(row: Record<string, unknown>): LeaderboardEntry {
+  return cleanEntry({
+    id: String(row.id),
+    callsign: String(row.callsign),
+    rank: String(row.rank),
+    unit: String(row.unit),
+    score: Number(row.score),
+    campaignPct: Number(row.campaign_pct),
+    missionsCompleted: Number(row.missions_completed),
+    goldMissions: Number(row.gold_missions),
+    perfectMissions: Number(row.perfect_missions),
+    difficulty: row.difficulty as Difficulty,
+    level: Number(row.level),
+    xp: Number(row.xp),
+    achievements: Number(row.achievements),
+    minigamePoints: Number(row.minigame_points),
+    challenge: String(row.challenge),
+    submittedAt: String(row.submitted_at),
+    source: 'shared',
+  }, 'shared');
+}
+
+async function fetchSupabaseEntries(): Promise<LeaderboardEntry[]> {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase
+    .from('leaderboard_entries')
+    .select('*')
+    .order('score', { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data as Record<string, unknown>[]).map(fromDbRow);
+}
+
+async function pushToSupabase(entry: LeaderboardEntry): Promise<LeaderboardEntry[]> {
+  if (!supabase) throw new Error('Supabase not configured');
+
+  // Only upsert if this score is an improvement (checked server-side via DB policy)
+  const row = toDbRow(cleanEntry(entry, 'shared'));
+  const { error } = await supabase
+    .from('leaderboard_entries')
+    .upsert(row, { onConflict: 'id', ignoreDuplicates: false });
+  if (error) throw error;
+
+  return fetchSupabaseEntries();
+}
+
+// --- Seed fallback ---
 
 async function fetchSeedEntries() {
   const base = import.meta.env.BASE_URL || '/';
   const url = `${base.endsWith('/') ? base : `${base}/`}leaderboard-seed.json`;
   try {
-    return await fetchJsonEntries(url, 'seed');
+    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const entries = Array.isArray(payload) ? payload : payload.entries;
+    return Array.isArray(entries) ? entries.map((e: LeaderboardEntry) => cleanEntry(e, 'seed')) : [];
   } catch {
     return [];
   }
 }
 
-async function fetchSharedEntries() {
-  return fetchJsonEntries(API_URL, 'shared');
-}
+// --- Public API ---
 
 export async function fetchLeaderboard(): Promise<LeaderboardResult> {
   const local = getLocalLeaderboard();
   const seed = await fetchSeedEntries();
 
+  if (!supabase) {
+    return {
+      entries: mergeEntries(local, seed),
+      sharedOnline: false,
+      message: 'Supabase not configured — showing local scores only.',
+    };
+  }
+
   try {
-    const shared = await fetchSharedEntries();
+    const shared = await fetchSupabaseEntries();
     return {
       entries: mergeEntries(shared, local, seed),
       sharedOnline: true,
-      message: 'Shared leaderboard online',
+      message: 'Live leaderboard from Supabase',
     };
   } catch {
     return {
       entries: mergeEntries(local, seed),
       sharedOnline: false,
-      message: 'Static board active. Shared API is not reachable from this host.',
+      message: 'Supabase unreachable — showing local scores.',
     };
   }
 }
 
 export async function submitLeaderboardEntry(entry: LeaderboardEntry): Promise<LeaderboardResult> {
   const local = saveLocalEntry(entry);
-  const payload = cleanEntry(entry, 'shared');
+
+  if (!supabase) {
+    const seed = await fetchSeedEntries();
+    return {
+      entries: mergeEntries(local, seed),
+      sharedOnline: false,
+      message: 'Score saved locally. Supabase not configured.',
+    };
+  }
 
   try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error(`Leaderboard submit failed: ${response.status}`);
-    const data = await response.json();
-    const sharedEntries = Array.isArray(data) ? data : data.entries;
+    const shared = await pushToSupabase(entry);
     return {
-      entries: mergeEntries(Array.isArray(sharedEntries) ? sharedEntries : [], local),
+      entries: mergeEntries(shared, local),
       sharedOnline: true,
-      message: 'Score submitted to the shared leaderboard',
+      message: 'Score submitted to the global leaderboard!',
     };
   } catch {
     const seed = await fetchSeedEntries();
     return {
       entries: mergeEntries(local, seed),
       sharedOnline: false,
-      message: 'Score saved on this device. Shared API is not reachable from this host.',
+      message: 'Score saved locally. Could not reach Supabase.',
     };
   }
 }
