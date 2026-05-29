@@ -44,3 +44,46 @@ export function missionCreditReward(score: number, difficultyMult = 1) {
 export function minigameCreditReward(score: number) {
   return Math.max(0, Math.ceil(score / 3));
 }
+
+// ─── Streak multiplier ────────────────────────────────────────────────────────
+// Consecutive correct answers build a visible, at-risk bonus. +10% per correct
+// answer past the first, capped at +100% (streak of 11). A wrong answer resets it.
+
+export interface StreakInfo {
+  level: number;
+  active: boolean;
+  bonusPct: number;
+  mult: number;
+}
+
+export function streakInfo(streak: number): StreakInfo {
+  const level = Math.max(0, streak);
+  const bonusPct = Math.min(100, Math.max(0, level - 1) * 10);
+  return { level, active: level >= 2, bonusPct, mult: 1 + bonusPct / 100 };
+}
+
+// ─── Supply drop loot ─────────────────────────────────────────────────────────
+// Variable reward on mission complete. Better performance tilts the odds toward
+// rare/gold, but every run has a shot at gold — that uncertainty is the hook.
+
+export type LootTier = 'common' | 'rare' | 'gold';
+
+export interface SupplyDrop {
+  tier: LootTier;
+  credits: number;
+  bonusCard?: 'ray_card' | 'mercy';
+}
+
+export function rollSupplyDrop(pct: number, baseCredits: number, rand: () => number = Math.random): SupplyDrop {
+  const goldChance = Math.min(0.6, 0.05 + Math.max(0, pct) * 0.45);
+  const rareChance = 0.35;
+  const r = rand();
+  let tier: LootTier;
+  if (r < goldChance) tier = 'gold';
+  else if (r < goldChance + rareChance) tier = 'rare';
+  else tier = 'common';
+  const mult = tier === 'gold' ? 2.5 : tier === 'rare' ? 1.5 : 1;
+  const credits = Math.max(1, Math.round(Math.max(0, baseCredits) * mult));
+  const bonusCard = tier === 'gold' ? (rand() < 0.5 ? 'ray_card' : 'mercy') : undefined;
+  return { tier, credits, bonusCard };
+}

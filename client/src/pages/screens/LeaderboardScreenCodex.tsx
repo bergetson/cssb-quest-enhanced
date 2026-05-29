@@ -6,9 +6,11 @@ import { ScreenWrap, SectionTitle, GradeBadge, StatBar, BadgeGrid, XPBar, Divide
 import {
   calculateCampaignScore,
   fetchLeaderboard,
+  findRival,
   makeLeaderboardEntry,
   submitLeaderboardEntry,
   type LeaderboardEntry,
+  type Rival,
 } from '../../lib/leaderboard';
 
 const MISSION_NAMES = [
@@ -37,6 +39,7 @@ export default function LeaderboardScreen() {
   const [syncMessage, setSyncMessage] = useState('Loading leaderboard...');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [rival, setRival] = useState<Rival | null>(null);
 
   const score = useMemo(() => calculateCampaignScore(state), [state]);
   const myEntry = useMemo(() => makeLeaderboardEntry(state), [state]);
@@ -66,6 +69,7 @@ export default function LeaderboardScreen() {
     setEntries(result.entries);
     setSharedOnline(result.sharedOnline);
     setSyncMessage(result.message);
+    setRival(findRival(result.entries, myEntry.id, myEntry.score, myEntry.challenge));
     setSubmitting(false);
     if (result.sharedOnline) toast.success('Score submitted to the shared leaderboard.');
     else toast.info('Score saved on this device. Shared API is not reachable from this host.');
@@ -87,6 +91,33 @@ export default function LeaderboardScreen() {
             {sharedOnline ? 'SHARED ONLINE' : 'STATIC MODE'}
           </div>
         </div>
+
+        {rival && (
+          <div className={`mil-card p-4 mb-5 animate-fade-in-up ${rival.relation === 'ahead' ? 'mil-card-orange' : 'mil-card-green'}`}>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{rival.relation === 'ahead' ? '🎯' : '🛡️'}</span>
+              <div className="flex-1 min-w-0">
+                {rival.relation === 'ahead' ? (
+                  <>
+                    <div className="font-black text-orange-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                      {rival.entry.callsign} scored {rival.entry.score} on this challenge — beat it?
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      You're just <span className="text-orange-200 font-bold">{rival.gap}</span> {rival.gap === 1 ? 'point' : 'points'} behind. Replay a mission for GOLD and take the spot.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-black text-emerald-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                      You're ahead of {rival.entry.callsign} by {rival.gap} {rival.gap === 1 ? 'point' : 'points'}.
+                    </div>
+                    <div className="text-xs text-slate-400">Defend your lead — they're {rival.entry.score} and climbing.</div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-[1fr_1.25fr] gap-4 mb-6">
           <div className="mil-card mil-card-gold p-5">
