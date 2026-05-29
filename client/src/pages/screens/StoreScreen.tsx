@@ -17,6 +17,8 @@ const USABLE_ITEMS: Record<string, { label: string; desc: string }> = {
   coffee_mug:      { label: 'Equip / Unequip', desc: 'Everyone approves.' },
   whiteboard_marker: { label: 'Equip / Unequip', desc: 'Does it have ink?' },
   tornado:         { label: 'Release the tornado', desc: 'Chaos event — for entertainment purposes only.' },
+  coffee:          { label: 'Drink it', desc: '+15 Focus, +10 Clarity. You needed this.' },
+  e4_truck_favor:  { label: 'Call it in', desc: 'Make one NMC vehicle FMC. No questions asked.' },
 };
 
 const COSMETIC_IDS = ['iron_man_mustache', 'funny_hat', 'aviator_glasses', 'beret', 'coffee_mug', 'whiteboard_marker'];
