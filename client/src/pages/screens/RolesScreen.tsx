@@ -3,6 +3,7 @@ import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilCard, MilButton, MilTag, Divider } from '../../components/GameUI';
 import { toast } from 'sonner';
 import { shuffleWithSeed } from '../../lib/gameplayUtils';
+import { accentText } from '../../lib/colors';
 
 const STAFF_SECTIONS = [
   {
@@ -240,7 +241,7 @@ export default function RolesScreen() {
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">{s.emoji}</div>
                   <div className="flex-1">
-                    <div className={`text-sm font-bold text-${s.color}-400`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{s.name}</div>
+                    <div className="text-sm font-bold" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(s.color) }}>{s.name}</div>
                     <div className="text-xs text-slate-500 mt-0.5">{s.mission.substring(0, 80)}...</div>
                   </div>
                   <div className="text-slate-600">→</div>

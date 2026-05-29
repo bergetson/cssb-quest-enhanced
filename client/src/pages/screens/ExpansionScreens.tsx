@@ -4,6 +4,7 @@ import {
   ScreenWrap, MilCard, MilButton, MilTag, SectionTitle, ProgressBar, Divider,
 } from '../../components/GameUI';
 import OutcomeFX from '../../components/OutcomeFX';
+import { accentText, accentTint } from '../../lib/colors';
 import {
   convoyScenarios,
   dscaMissions,
@@ -172,7 +173,7 @@ function ModuleHeader({
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <div className="text-[10px] mono tracking-[0.24em] text-slate-500 mb-1">// {eyebrow}</div>
-          <h1 className={`text-3xl font-black text-${color === 'gold' ? 'yellow' : color}-400 tracking-wide`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+          <h1 className="text-3xl font-black tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(color) }}>
             {title}
           </h1>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">{subtitle}</p>
@@ -209,7 +210,7 @@ function ScoreAARPanel({
           <h2 className="text-2xl font-black text-slate-100" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{title}</h2>
         </div>
         <div className="text-right">
-          <div className={`text-4xl font-black text-${color === 'gold' ? 'yellow' : color}-400 mono`}>{score}%</div>
+          <div className="text-4xl font-black mono" style={accentText(color)}>{score}%</div>
           <div className="text-xs text-slate-500 mono">{grade} | +{xp} XP</div>
         </div>
       </div>
@@ -232,8 +233,8 @@ function ScoreAARPanel({
 
 function AarList({ title, items, color }: { title: string; items: string[]; color: string }) {
   return (
-    <div className={`rounded-xl border border-${color}-400/25 bg-${color}-400/5 p-3`}>
-      <div className={`text-xs font-bold text-${color}-400 mb-2`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{title}</div>
+    <div className="rounded-xl border p-3" style={accentTint(color, 0.05, 0.25)}>
+      <div className="text-xs font-bold mb-2" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(color) }}>{title}</div>
       <ul className="space-y-1.5">
         {items.map(item => <li key={item} className="text-xs text-slate-400 leading-relaxed">- {item}</li>)}
       </ul>

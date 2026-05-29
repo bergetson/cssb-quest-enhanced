@@ -4,6 +4,7 @@ import {
   StatBar, XPBar, StreakBadge, Divider,
 } from '../../components/GameUI';
 import { DIFFS } from '../../lib/gameData';
+import { accentText, accentTint } from '../../lib/colors';
 import { calculateCampaignScore } from '../../lib/leaderboard';
 import { ChaosMeter } from '../../components/ChaosOverlay';
 import PixelSoldierAvatar from '../../components/PixelSoldierAvatar';
@@ -316,11 +317,13 @@ export default function HubScreen() {
                 >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${
-                    isCompleted ? 'bg-emerald-400/10 border border-emerald-400/30' :
-                    isLocked    ? 'bg-slate-800 border border-white/5' :
-                    `bg-${m.color}-400/10 border border-${m.color}-400/30`
-                  }`}>
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border ${
+                      isCompleted ? 'bg-emerald-400/10 border-emerald-400/30' :
+                      isLocked    ? 'bg-slate-800 border-white/5' : ''
+                    }`}
+                    style={!isCompleted && !isLocked ? accentTint(m.color, 0.1, 0.3) : undefined}
+                  >
                     {isLocked ? (
                       <LockKeyhole size={21} className="text-slate-500" />
                     ) : isCompleted ? (
@@ -382,7 +385,7 @@ export default function HubScreen() {
                 <div className={`tool-card-icon tool-card-icon-${t.color}`} aria-hidden="true">
                   <ToolIcon size={22} strokeWidth={2.3} />
                 </div>
-                <div className={`text-xs font-bold tracking-wide text-${t.color}-400 mb-1`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                <div className="text-xs font-bold tracking-wide mb-1" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(t.color) }}>
                   {t.label}
                   {t.id === 'daily' && dailyAvailable && (
                     <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />

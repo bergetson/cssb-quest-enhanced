@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilTag, Divider } from '../../components/GameUI';
+import { accentText, accentTint } from '../../lib/colors';
 
 // Design: Modern Military Command Dashboard — Reference Library
 // Fonts: Rajdhani (headers) + IBM Plex Mono (numbers)
@@ -236,14 +237,14 @@ export default function RefScreen() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="text-3xl">{ref.emoji}</div>
                 <div>
-                  <div className={`text-[10px] text-${ref.color}-400/60 mono tracking-widest mb-0.5`}>{ref.category}</div>
+                  <div className="text-[10px] mono tracking-widest mb-0.5" style={accentText(ref.color, 0.6)}>{ref.category}</div>
                   <h2 className="text-xl font-black tracking-wide" style={{ fontFamily: 'Rajdhani, sans-serif' }}>{ref.title}</h2>
                 </div>
               </div>
               <div className="grid gap-4">
                 {ref.content.map((c, i) => (
                   <div key={i} className="border-l-2 border-white/10 pl-4">
-                    <div className={`text-xs font-bold text-${ref.color}-400 mb-1`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{c.label}</div>
+                    <div className="text-xs font-bold mb-1" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(ref.color) }}>{c.label}</div>
                     <p className="text-sm text-slate-300 leading-relaxed">{c.text}</p>
                   </div>
                 ))}
@@ -287,9 +288,9 @@ export default function RefScreen() {
                   onClick={() => setSelected(r.id)}
                 >
                   <div className="text-2xl mb-2">{r.emoji}</div>
-                  <div className={`text-xs font-bold text-${r.color}-400 mb-0.5`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{r.title}</div>
+                  <div className="text-xs font-bold mb-0.5" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(r.color) }}>{r.title}</div>
                   <div className="text-[10px] text-slate-600">{r.content.length} entries</div>
-                  <div className={`text-[9px] mono text-${r.color}-400/40 mt-1`}>{r.category}</div>
+                  <div className="text-[9px] mono mt-1" style={accentText(r.color, 0.4)}>{r.category}</div>
                 </div>
               ))}
               {filtered.length === 0 && (
@@ -318,9 +319,9 @@ export default function RefScreen() {
                 { label: 'WATER', value: '15%', color: 'cyan' },
                 { label: 'AMMO', value: '10%', color: 'red' },
               ].map(({ label, value, color }) => (
-                <div key={label} className={`p-3 rounded-xl border border-${color}-400/20 bg-${color}-400/5 text-center`}>
-                  <div className={`text-2xl font-black text-${color}-400`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{value}</div>
-                  <div className={`text-[10px] mono text-${color}-400/60`}>{label}</div>
+                <div key={label} className="p-3 rounded-xl border text-center" style={accentTint(color, 0.05, 0.2)}>
+                  <div className="text-2xl font-black" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(color) }}>{value}</div>
+                  <div className="text-[10px] mono" style={accentText(color, 0.6)}>{label}</div>
                 </div>
               ))}
             </div>

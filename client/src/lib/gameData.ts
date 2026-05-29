@@ -144,6 +144,11 @@ export interface GameState {
   bashDefeated: boolean;
   snedigarHits: number; // how many times Snedigar has run over the player
   e4FavorUsed: boolean;
+  // Purchasable power-ups
+  pptShield: boolean;     // blocks CPT PowerPoint chaos events
+  kyleCalc: boolean;      // shows formula hints even on hard difficulty
+  xpDoubleNext: boolean;  // doubles mission-completion XP on the next mission
+  gibsonStar: boolean;    // forces a GOLD grade on the next completed mission
 }
 
 export interface ResultData {
