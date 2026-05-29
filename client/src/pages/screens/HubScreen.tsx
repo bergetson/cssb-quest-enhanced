@@ -82,6 +82,13 @@ const DIFF_COLORS: Record<string, string> = {
   HARD:  'text-red-400',
 };
 
+// Explicit hex per mission accent — inline styles guarantee the trail nodes
+// render in color (Tailwind v4 won't JIT dynamically-built class names).
+const MISSION_HEX: Record<string, string> = {
+  cyan: '#22d3ee', purple: '#a78bfa', green: '#4ade80', orange: '#fb923c',
+  red: '#ef4444', gold: '#F5C842', lime: '#a3e635',
+};
+
 export default function HubScreen() {
   const { state, dispatch, getScenario } = useGame();
   const diff = DIFFS[state.difficulty];
@@ -269,7 +276,7 @@ export default function HubScreen() {
           CAMPAIGN MISSIONS
         </SectionTitle>
 
-        <div className="grid gap-2.5 mb-8">
+        <div className="flex flex-col mb-8">
           {MISSIONS.map((m, i) => {
             const rec = state.missions[m.id];
             const isCompleted = !!state.completed[m.id];
@@ -277,16 +284,36 @@ export default function HubScreen() {
             const isCurrent = !isCompleted && !isLocked;
             const isNext = i === nextMissionIdx;
             const MissionIcon = m.icon;
+            const isLastMission = i === MISSIONS.length - 1;
+            const hex = MISSION_HEX[m.color] || '#22d3ee';
+            const nodeStyle = isCompleted
+              ? { borderColor: '#4ade80', background: 'rgba(74,222,128,0.15)', color: '#4ade80' }
+              : isLocked
+              ? { borderColor: '#334155', background: '#0f172a', color: '#475569' }
+              : { borderColor: hex, background: `${hex}26`, color: hex };
 
             return (
-              <div
-                key={m.id}
-                className={`mil-card p-4 transition-all ${
-                  isLocked ? 'opacity-35 cursor-not-allowed' :
-                  `hover:-translate-y-0.5 cursor-pointer ${isCurrent ? `mil-card-${m.color}` : ''}`
-                }`}
-                onClick={() => !isLocked && startMission(i)}
-              >
+              <div key={m.id} className="flex gap-3">
+                {/* Campaign trail rail */}
+                <div className="flex flex-col items-center w-8 shrink-0">
+                  <div
+                    className={`w-8 h-8 rounded-full border-2 grid place-items-center text-xs font-black mono shrink-0 ${isCurrent ? 'animate-pulse-glow' : ''}`}
+                    style={nodeStyle}
+                  >
+                    {isCompleted ? <CheckCircle2 size={16} /> : isLocked ? <LockKeyhole size={13} /> : i + 1}
+                  </div>
+                  {!isLastMission && (
+                    <div className="w-0.5 flex-1 min-h-[22px] my-1 rounded-full" style={{ background: isCompleted ? 'rgba(74,222,128,0.4)' : 'rgba(51,65,85,0.7)' }} />
+                  )}
+                </div>
+
+                <div
+                  className={`flex-1 mb-2.5 mil-card p-4 transition-all ${
+                    isLocked ? 'opacity-35 cursor-not-allowed' :
+                    `hover:-translate-y-0.5 cursor-pointer ${isCurrent ? `mil-card-${m.color}` : ''}`
+                  }`}
+                  onClick={() => !isLocked && startMission(i)}
+                >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 ${
@@ -332,6 +359,7 @@ export default function HubScreen() {
                       <div className="text-xs text-yellow-400/70 mono">+{m.xp} XP</div>
                     )}
                   </div>
+                </div>
                 </div>
               </div>
             );
