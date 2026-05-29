@@ -1,4 +1,7 @@
-html,
+html {
+  max-width: 100%;
+}
+
 body,
 #root {
   max-width: 100%;

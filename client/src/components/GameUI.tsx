@@ -279,9 +279,9 @@ export function GradeBadge({ grade }: { grade: string }) {
 
 export function ScreenWrap({ children, showTopBar = true }: { children: React.ReactNode; showTopBar?: boolean }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-dvh flex flex-col">
       {showTopBar && <TopBar />}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {children}
       </div>
     </div>
