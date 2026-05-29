@@ -83,8 +83,8 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
           text: `Mission received at 0600. H-hour is ${s.hHour}. Apply the 1/3 - 2/3 rule. Enter hours as whole numbers.`,
           fields: [
             fld('total', 'Total hours available before H-hour', Math.round((s.hHour / 100) - 6), 0, 'H-hour time minus receipt time'),
-            fld('unit', 'Hours the battalion keeps for planning (1/3)', Math.round(((s.hHour / 100) - 6) / 3), 0, 'Total ÷ 3'),
-            fld('sub', 'Hours subordinates receive (2/3)', Math.round(((s.hHour / 100) - 6) * 2 / 3), 0, 'Total × 2/3'),
+            fld('unit', 'Hours the battalion keeps for planning (1/3)', Math.round(((s.hHour / 100) - 6) / 3), 1, 'Total ÷ 3'),
+            fld('sub', 'Hours subordinates receive (2/3)', Math.round(((s.hHour / 100) - 6) * 2 / 3), 1, 'Total × 2/3'),
           ],
           learn: 'The 1/3 - 2/3 rule protects subordinate planning time. It is one of the simplest ways a staff can help subordinate units.',
           score: 24,
@@ -343,7 +343,7 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
           kind: 'input', speaker: 'bc', loc: 'COA COMPARISON BOARD',
           text: 'COA 2 scores: Reliability 4, Risk 4, Flexibility 5, Simplicity 3, Efficiency 3. Same weights: 30%, 20%, 20%, 15%, 15%.',
           fields: [
-            fld('coa2', 'COA 2 weighted score', 4.00, 0.03, '(4×.30)+(4×.20)+(5×.20)+(3×.15)+(3×.15)'),
+            fld('coa2', 'COA 2 weighted score', 3.90, 0.03, '(4×.30)+(4×.20)+(5×.20)+(3×.15)+(3×.15)'),
           ],
           learn: 'COA 2 wins if flexibility and reliability matter more than simplicity.',
           score: 18,
@@ -387,7 +387,7 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
         },
         {
           kind: 'input', speaker: 'xo', loc: 'FRAGORD UPDATE',
-          text: `FRAGORD: 1-163 extends to ${s.durationDays + 1} days. Route Moose closes after 1400. One ${s.nmc} is NMC. LOGSTAT every 6 hours. Enter updated planning values.`,
+          text: `FRAGORD: 1-163 extends to ${s.durationDays + 1} days. Route Moose closes after 1400 — divert to Route Elk. One ${s.nmc} is NMC. LOGSTAT every 6 hours. Enter updated planning values.`,
           fields: [
             fld('days', 'Updated mission duration in days', s.durationDays + 1, 0, 'Original + 1'),
             fld('logstat', 'LOGSTAT interval in hours', 6, 0, 'As directed by FRAGORD'),
@@ -437,11 +437,11 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
         },
         {
           kind: 'input', speaker: 's4', loc: 'FINAL LIFT / DRIVER FEASIBILITY',
-          text: `Cargo pallets and drivers. Total available lift capacity: ${final.cap} pallets per lift. Driver requirement: 2 per major vehicle. Available drivers: ${s.driverAvail}.`,
+          text: `Cargo pallets and drivers. Take your MRE pallets from the sustainment estimate, palletize water at 500 gallons per pallet (round up), and add 10 pallets of misc cargo (ammo, batteries, parts). Total available lift capacity: ${final.cap} pallets per lift. Major vehicles requiring crews: 3 PLS + 2 LMTV + 1 fueler = 6, at 2 drivers each. Available drivers: ${s.driverAvail}.`,
           fields: [
-            fld('totalPallets', 'Total cargo pallets', final.totalPallets, 2, 'MRE + water + ammo + misc'),
+            fld('totalPallets', 'Total cargo pallets', final.totalPallets, 2, 'MRE pallets + ⌈water ÷ 500⌉ + 10 misc'),
             fld('tripsReq', 'Trips required to move all cargo', final.tripsReq, 0, `Total pallets ÷ ${final.cap}, round up`),
-            fld('driversReq', 'Drivers required for full convoy', final.driversReq, 0, '(2+2+1+1) vehicles × 2 drivers'),
+            fld('driversReq', 'Drivers required for full convoy', final.driversReq, 0, '6 major vehicles × 2 drivers'),
             fld('driverDelta', 'Driver surplus/deficit', final.driverDelta, 0, `${s.driverAvail} - required`),
           ],
           learn: 'Feasibility is binary. Either you have enough drivers or you do not. The math tells you which.',
