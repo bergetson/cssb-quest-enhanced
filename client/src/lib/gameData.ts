@@ -1390,6 +1390,10 @@ export function baseState(): GameState {
     bashDefeated: false,
     snedigarHits: 0,
     e4FavorUsed: false,
+    pptShield: false,
+    kyleCalc: false,
+    xpDoubleNext: false,
+    gibsonStar: false,
   };
 }
 

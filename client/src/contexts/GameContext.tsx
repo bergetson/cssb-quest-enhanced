@@ -171,6 +171,10 @@ function reducer(state: GameState, action: Action): GameState {
       if (action.itemId === 'mercy') newState = { ...newState, mercyCards: newState.mercyCards + 1 };
       if (action.itemId === 'e4') newState = { ...newState, e4: true };
       if (action.itemId === 'secret_phrase') newState = { ...newState, secret: true };
+      if (action.itemId === 'ppt_shield') newState = { ...newState, pptShield: true };
+      if (action.itemId === 'kyle_calc') newState = { ...newState, kyleCalc: true };
+      if (action.itemId === 'whitehead_op') newState = { ...newState, xpDoubleNext: true };
+      if (action.itemId === 'gibson_star') newState = { ...newState, gibsonStar: true };
       if (action.itemId === 'redbull') newState = { ...newState, redbull: newState.redbull + 4 };
       if (action.itemId === 'battle_captain_hotline') {
         newState = {
@@ -221,6 +225,8 @@ function reducer(state: GameState, action: Action): GameState {
       if (action.itemId === 'mercy') newState = { ...newState, mercyCards: Math.max(0, newState.mercyCards - 1) };
       if (action.itemId === 'redbull') newState = { ...newState, redbull: Math.max(0, newState.redbull - 1) };
       if (action.itemId === 'candy') newState = { ...newState, candyCount: Math.max(0, newState.candyCount - 1) };
+      if (action.itemId === 'whitehead_op') newState = { ...newState, xpDoubleNext: false };
+      if (action.itemId === 'gibson_star') newState = { ...newState, gibsonStar: false };
       // Cosmetics: set active cosmetic
       if (['beret','coffee_mug','whiteboard_marker','funny_hat','iron_man_mustache','aviator_glasses'].includes(action.itemId)) {
         newState = { ...newState, activeCosmeticId: action.itemId };

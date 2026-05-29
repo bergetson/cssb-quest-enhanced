@@ -503,7 +503,8 @@ export default function MissionScreen() {
   const speedWindowMs = (step?.fields ? step.fields.length * 7 + 8 : 12) * 1000;
   const [activeChaosEvent, setActiveChaosEvent] = useState<ChaosEvent | null>(null);
   const [pendingAchievement, setPendingAchievement] = useState<{ name: string; emoji: string; desc: string } | null>(null);
-  const { shouldTrigger, getRandomEvent } = useChaosTrigger(state.chaosMeter, false);
+  const { shouldTrigger, getRandomEvent } = useChaosTrigger(state.chaosMeter, state.pptShield);
+  const showFormulaHints = diff.hints || state.kyleCalc;
 
   // Cosmetic comments
   const COSMETIC_COMMENTS: Record<string, string> = {
@@ -707,8 +708,8 @@ export default function MissionScreen() {
   function handleNext() {
     if (isLastStep) {
       // Complete mission
-      const finalScore = missionScore;
       const maxScore = getMissionMax(mission);
+      const finalScore = state.gibsonStar ? maxScore : missionScore;
       const pct = maxScore > 0 ? finalScore / maxScore : 0;
       const weightedPoints = Math.round(finalScore * diff.mult);
       const baseCredits = missionCreditReward(finalScore, diff.mult);
@@ -723,7 +724,9 @@ export default function MissionScreen() {
         : undefined;
       dispatch({ type: 'COMPLETE_MISSION', missionId: mission.id, score: finalScore, max: maxScore });
       dispatch({ type: 'ADD_CREDS', amount: creditsEarned });
-      dispatch({ type: 'ADD_XP', amount: 50 });
+      dispatch({ type: 'ADD_XP', amount: state.xpDoubleNext ? 100 : 50 });
+      if (state.xpDoubleNext) dispatch({ type: 'USE_ITEM', itemId: 'whitehead_op' });
+      if (state.gibsonStar) dispatch({ type: 'USE_ITEM', itemId: 'gibson_star' });
       if (loot.bonusCard) {
         // Free grant (cost 0) — BUY_ITEM wires the card into the right counter
         dispatch({ type: 'BUY_ITEM', itemId: loot.bonusCard, cost: 0 });
@@ -890,7 +893,7 @@ export default function MissionScreen() {
         {/* Difficulty hint */}
         {diff.hard && (
           <div className="warn-box mb-4">
-            ⚠️ {diff.name}: No formula hints. {diff.noSaves ? 'No save cards.' : 'Save cards still work.'} Use the scenario data and reference materials.
+            ⚠️ {diff.name}: {state.kyleCalc ? "Kyle's Calculator is active." : 'No formula hints.'} {diff.noSaves ? 'No save cards.' : 'Save cards still work.'} Use the scenario data and reference materials.
           </div>
         )}
 
@@ -956,7 +959,7 @@ export default function MissionScreen() {
               {step.fields.map(f => (
                 <div key={f.id}>
                   <label className="block text-xs text-slate-400 mb-1.5 mono">{f.label}</label>
-                  {diff.hints && f.hint && !submitted && (
+                  {showFormulaHints && f.hint && !submitted && (
                     <div className="text-[10px] text-cyan-400/60 mono mb-1">💡 {f.hint}</div>
                   )}
                   <input

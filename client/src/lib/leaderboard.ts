@@ -189,7 +189,10 @@ function mergeEntries(...groups: LeaderboardEntry[][]) {
     for (const raw of group) {
       const entry = cleanEntry(raw, raw.source || 'shared');
       const prev = byId.get(entry.id);
-      if (!prev || entry.score > prev.score || (entry.score === prev.score && new Date(entry.submittedAt) > new Date(prev.submittedAt))) {
+      const sameScore = prev && entry.score === prev.score;
+      const prefersShared = sameScore && entry.source === 'shared' && prev.source !== 'shared';
+      const isNewer = sameScore && prev.source !== 'shared' && new Date(entry.submittedAt) > new Date(prev.submittedAt);
+      if (!prev || entry.score > prev.score || prefersShared || isNewer) {
         byId.set(entry.id, entry);
       }
     }
@@ -348,8 +351,9 @@ export async function submitLeaderboardEntry(entry: LeaderboardEntry): Promise<L
 
   try {
     const shared = await pushToSupabase(entry);
+    const seed = await fetchSeedEntries();
     return {
-      entries: mergeEntries(shared, local),
+      entries: mergeEntries(shared, local, seed),
       sharedOnline: true,
       message: 'Score submitted to the global leaderboard!',
     };
