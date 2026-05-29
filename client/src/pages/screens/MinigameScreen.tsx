@@ -297,6 +297,8 @@ function MathSprint({ onScore }: { onScore: (s: number) => void }) {
     if (done && started) toast.info(`Time's up! ${correct} correct — ${totalScore} pts`);
   }, [done]);
 
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
   return (
     <div className="animate-fade-in-up">
       {!started ? (

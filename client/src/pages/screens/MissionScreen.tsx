@@ -708,8 +708,12 @@ export default function MissionScreen() {
   function handleNext() {
     if (isLastStep) {
       // Complete mission
+      const rawScore = missionScore;
       const maxScore = getMissionMax(mission);
-      const finalScore = state.gibsonStar ? maxScore : missionScore;
+      // gibsonStar: force GOLD by bumping score to 90% of max if below
+      const finalScore = state.gibsonStar && rawScore < Math.ceil(0.9 * maxScore)
+        ? Math.ceil(0.9 * maxScore)
+        : rawScore;
       const pct = maxScore > 0 ? finalScore / maxScore : 0;
       const weightedPoints = Math.round(finalScore * diff.mult);
       const baseCredits = missionCreditReward(finalScore, diff.mult);
@@ -724,14 +728,16 @@ export default function MissionScreen() {
         : undefined;
       dispatch({ type: 'COMPLETE_MISSION', missionId: mission.id, score: finalScore, max: maxScore });
       dispatch({ type: 'ADD_CREDS', amount: creditsEarned });
-      dispatch({ type: 'ADD_XP', amount: state.xpDoubleNext ? 100 : 50 });
-      if (state.xpDoubleNext) dispatch({ type: 'USE_ITEM', itemId: 'whitehead_op' });
-      if (state.gibsonStar) dispatch({ type: 'USE_ITEM', itemId: 'gibson_star' });
+      const xpBase = 50;
+      const xpEarned = state.xpDoubleNext ? xpBase * 2 : xpBase;
+      dispatch({ type: 'ADD_XP', amount: xpEarned });
+      // Consume one-time power-ups
+      if (state.gibsonStar) dispatch({ type: 'SET_GAME_FLAG', flag: 'gibsonStar', value: false });
+      if (state.xpDoubleNext) dispatch({ type: 'SET_GAME_FLAG', flag: 'xpDoubleNext', value: false });
       if (loot.bonusCard) {
         // Free grant (cost 0) — BUY_ITEM wires the card into the right counter
         dispatch({ type: 'BUY_ITEM', itemId: loot.bonusCard, cost: 0 });
       }
-      playSfx(loot.tier === 'gold' ? 'gold' : 'loot');
       if (pct >= 1) {
         dispatch({ type: 'ADD_ACHIEVEMENT', achievement: {
           id: 'perfect_mission',
@@ -959,7 +965,7 @@ export default function MissionScreen() {
               {step.fields.map(f => (
                 <div key={f.id}>
                   <label className="block text-xs text-slate-400 mb-1.5 mono">{f.label}</label>
-                  {showFormulaHints && f.hint && !submitted && (
+                  {(diff.hints || state.kyleCalc) && f.hint && !submitted && (
                     <div className="text-[10px] text-cyan-400/60 mono mb-1">💡 {f.hint}</div>
                   )}
                   <input

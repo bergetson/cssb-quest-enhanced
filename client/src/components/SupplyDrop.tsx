@@ -26,17 +26,19 @@ export default function SupplyDrop({ loot }: { loot: LootResult }) {
   const [open, setOpen] = useState(false);
   const meta = TIER_META[loot.tier];
 
+  const sfxKind = loot.tier === 'gold' ? 'gold' : 'loot';
+
   // Auto-open after a beat so passive players still get the payoff.
   useEffect(() => {
     if (open) return;
-    const t = setTimeout(() => setOpen(true), 2500);
+    const t = setTimeout(() => { setOpen(true); playSfx(sfxKind); }, 2500);
     return () => clearTimeout(t);
   }, [open]);
 
   function reveal() {
     if (open) return;
     setOpen(true);
-    playSfx(loot.tier === 'gold' ? 'gold' : 'loot');
+    playSfx(sfxKind);
   }
 
   return (

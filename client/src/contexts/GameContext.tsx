@@ -52,7 +52,8 @@ type Action =
   | { type: 'SNEDIGAR_HIT' }
   | { type: 'BASH_DEFEATED' }
   | { type: 'USE_E4_FAVOR' }
-  | { type: 'ADD_STORE_ITEM'; itemId: string };
+  | { type: 'ADD_STORE_ITEM'; itemId: string }
+  | { type: 'SET_GAME_FLAG'; flag: 'pptShield' | 'kyleCalc' | 'xpDoubleNext' | 'gibsonStar'; value: boolean };
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -176,6 +177,10 @@ function reducer(state: GameState, action: Action): GameState {
       if (action.itemId === 'whitehead_op') newState = { ...newState, xpDoubleNext: true };
       if (action.itemId === 'gibson_star') newState = { ...newState, gibsonStar: true };
       if (action.itemId === 'redbull') newState = { ...newState, redbull: newState.redbull + 4 };
+      if (action.itemId === 'ppt_shield') newState = { ...newState, pptShield: true };
+      if (action.itemId === 'kyle_calc') newState = { ...newState, kyleCalc: true };
+      if (action.itemId === 'whitehead_op') newState = { ...newState, xpDoubleNext: true };
+      if (action.itemId === 'gibson_star') newState = { ...newState, gibsonStar: true };
       if (action.itemId === 'battle_captain_hotline') {
         newState = {
           ...newState,
@@ -310,6 +315,8 @@ function reducer(state: GameState, action: Action): GameState {
       if (state.storeItemsBought.includes(action.itemId)) return state;
       return { ...state, storeItemsBought: [...state.storeItemsBought, action.itemId] };
     }
+    case 'SET_GAME_FLAG':
+      return { ...state, [action.flag]: action.value };
     default:
       return state;
   }
