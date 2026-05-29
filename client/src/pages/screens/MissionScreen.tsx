@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useGame } from '../../contexts/GameContext';
 import {
   ScreenWrap, MilCard, MilButton, NPCDialog, MilTag, GradeBadge, ProgressBar, Divider,
@@ -118,7 +119,7 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
         },
         {
           kind: 'input', speaker: 'system', loc: 'RUNNING ESTIMATE CHECK',
-          text: 'Enter the verified planning variables from the staff huddle.',
+          text: 'Enter the verified planning variables from the staff huddle. Note: meals and ammo can be stockpiled, but the commodity that must be hauled forward and resupplied every single day is the one that paces the whole operation.',
           fields: [
             fld('pers', 'Confirmed personnel strength', s.personnel, 0, 'From verified PERSTAT'),
             fld('drivers', 'Qualified drivers available', s.driverAvail, 0, 'From S4 vehicle roster'),
@@ -494,7 +495,12 @@ export default function MissionScreen() {
   const [missionScore, setMissionScore] = useState(state.scores[mission?.id] || 0);
   const [fx, setFx] = useState<PositiveFxData | null>(null);
   const streakBonusRef = useRef(0);
+  const inputStartRef = useRef<number>(Date.now());
   const inputRef = useRef<HTMLDivElement>(null);
+
+  // Generous "fast hands" window — beating it on a perfect step is pure upside,
+  // never a penalty, so learners are never punished for thinking.
+  const speedWindowMs = (step?.fields ? step.fields.length * 7 + 8 : 12) * 1000;
   const [activeChaosEvent, setActiveChaosEvent] = useState<ChaosEvent | null>(null);
   const [pendingAchievement, setPendingAchievement] = useState<{ name: string; emoji: string; desc: string } | null>(null);
   const { shouldTrigger, getRandomEvent } = useChaosTrigger(state.chaosMeter, false);
@@ -514,6 +520,7 @@ export default function MissionScreen() {
     setInputResults({});
     setSubmitted(false);
     setChoiceResult(null);
+    inputStartRef.current = Date.now();
   }, [state.missionIndex, state.stepIndex]);
 
   useEffect(() => {
@@ -667,13 +674,17 @@ export default function MissionScreen() {
 
     if (pct === 1) {
       const bonus = si.active ? Math.round(score * si.bonusPct / 100) : 0;
+      const fast = Date.now() - inputStartRef.current <= speedWindowMs;
+      const speedBonus = fast ? Math.max(5, Math.round(score * 0.2)) : 0;
       const newStreak = state.streak + 1;
       dispatch({ type: 'ADD_STREAK' });
-      dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) + bonus });
+      dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) + bonus + speedBonus });
       if (bonus > 0) streakBonusRef.current += bonus;
+      if (speedBonus > 0) streakBonusRef.current += speedBonus;
       playSfx(newStreak >= 2 ? 'streak' : 'correct');
-      setFx({ points: score, bonus, streak: newStreak, bonusPct: streakInfo(newStreak).bonusPct });
+      setFx({ points: score, bonus: bonus + speedBonus, streak: newStreak, bonusPct: streakInfo(newStreak).bonusPct });
       toast.success(`Perfect! All ${step.fields.length} correct. +${score} pts` + (bonus > 0 ? ` (+${bonus} streak)` : ''));
+      if (speedBonus > 0) toast.success(`⚡ Fast hands +${speedBonus} XP`);
     } else if (pct >= 0.7) {
       dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) });
       toast.info(`${correct}/${step.fields.length} correct. +${score} pts`);
@@ -925,6 +936,22 @@ export default function MissionScreen() {
         {step.kind === 'input' && step.fields && (
           <div className="animate-fade-in-up" ref={inputRef}>
             <div className="text-xs text-slate-600 mono mb-3">// ENTER YOUR CALCULATIONS</div>
+            {/* Speed bonus window — fill empties over time; beat it for ⚡ Fast hands */}
+            {!submitted && (
+              <div className="mb-4">
+                <div className="text-[10px] mono text-cyan-400/70 mb-1">⚡ FAST HANDS WINDOW — answer perfectly before it empties for bonus XP</div>
+                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                  <motion.div
+                    key={`${state.missionIndex}-${state.stepIndex}`}
+                    className="h-full"
+                    style={{ background: 'linear-gradient(90deg,#22d3ee,#4ade80)' }}
+                    initial={{ width: '100%' }}
+                    animate={{ width: '0%' }}
+                    transition={{ duration: speedWindowMs / 1000, ease: 'linear' }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="grid gap-4 mb-4">
               {step.fields.map(f => (
                 <div key={f.id}>
