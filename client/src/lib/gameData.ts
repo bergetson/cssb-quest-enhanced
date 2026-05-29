@@ -161,6 +161,10 @@ export interface ResultData {
   grade?: string;
   max?: number;
   missionScore?: number;
+  // Reward + engagement metadata (set on mission completion)
+  loot?: { tier: 'common' | 'rare' | 'gold'; credits: number; bonusCard?: 'ray_card' | 'mercy' };
+  streakBonus?: number; // total bonus XP earned from streaks this mission
+  nearMissPts?: number; // points short of GOLD, only set when narrowly missed
 }
 
 // ─── Scenario Generator ───────────────────────────────────────────────────────

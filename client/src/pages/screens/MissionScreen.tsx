@@ -7,10 +7,11 @@ import {
   DIFFS, CHARS, makeScenario, class1Vals, fuelVals, ammoVals, finalVals,
   grade, parseNum, fmtN, ceilN, passThresholdForDifficulty, type Scenario,
 } from '../../lib/gameData';
-import { missionCreditReward, shuffleWithSeed } from '../../lib/gameplayUtils';
+import { missionCreditReward, shuffleWithSeed, streakInfo, rollSupplyDrop } from '../../lib/gameplayUtils';
 import { toast } from 'sonner';
-import { useState as useChaosState } from 'react';
 import { ChaosOverlay, AchievementToast, useChaosTrigger, ChaosMeter } from '../../components/ChaosOverlay';
+import PositiveFX, { type PositiveFxData } from '../../components/PositiveFX';
+import { playSfx } from '../../lib/sfx';
 import type { ChaosEvent } from '../../lib/gameData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -491,6 +492,8 @@ export default function MissionScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [choiceResult, setChoiceResult] = useState<{ choice: Choice; index: number } | null>(null);
   const [missionScore, setMissionScore] = useState(state.scores[mission?.id] || 0);
+  const [fx, setFx] = useState<PositiveFxData | null>(null);
+  const streakBonusRef = useRef(0);
   const inputRef = useRef<HTMLDivElement>(null);
   const [activeChaosEvent, setActiveChaosEvent] = useState<ChaosEvent | null>(null);
   const [pendingAchievement, setPendingAchievement] = useState<{ name: string; emoji: string; desc: string } | null>(null);
@@ -516,6 +519,11 @@ export default function MissionScreen() {
   useEffect(() => {
     setMissionScore(state.scores[mission?.id] || 0);
   }, [mission?.id, state.scores]);
+
+  // Reset the per-mission streak bonus accumulator only when the mission changes.
+  useEffect(() => {
+    streakBonusRef.current = 0;
+  }, [mission?.id]);
 
   const choiceAttempt = mission ? (state.missions[mission.id]?.attempts || 0) : 0;
   const visibleChoices = useMemo(
@@ -543,22 +551,33 @@ export default function MissionScreen() {
     setChoiceResult({ choice, index: idx });
 
     const score = Math.max(0, choice.score);
+    const si = streakInfo(state.streak);
     dispatch({ type: 'ADD_MISSION_SCORE', missionId: mission.id, score, max: getStepMax(step) });
     dispatch({ type: 'APPLY_EFFECTS', effects: choice.effects as any });
     dispatch({ type: 'SPEND_TIME', minutes: 4 });
     setMissionScore(prev => prev + score);
 
     if (choice.correct) {
+      const bonus = si.active ? Math.round(score * si.bonusPct / 100) : 0;
+      const newStreak = state.streak + 1;
       dispatch({ type: 'ADD_STREAK' });
-      dispatch({ type: 'ADD_XP', amount: 15 });
+      dispatch({ type: 'ADD_XP', amount: 15 + bonus });
+      if (bonus > 0) streakBonusRef.current += bonus;
       // Reduce chaos slightly on correct answer
       dispatch({ type: 'REDUCE_CHAOS', amount: 3 });
-      toast.success('Correct! +' + score + ' pts');
+      playSfx(newStreak >= 2 ? 'streak' : 'correct');
+      setFx({ points: score, bonus, streak: newStreak, bonusPct: streakInfo(newStreak).bonusPct });
+      toast.success('Correct! +' + score + ' pts' + (bonus > 0 ? ` (+${bonus} streak)` : ''));
     } else {
+      const lostStreak = state.streak;
       dispatch({ type: 'RESET_STREAK' });
       // Wrong answer increases chaos
       const chaosAdd = state.difficulty === 'nightmare' || state.difficulty === 'qual' ? 20 : diff.hard ? 15 : 10;
       dispatch({ type: 'ADD_CHAOS', amount: chaosAdd });
+      if (lostStreak >= 2) {
+        playSfx('break');
+        toast.error(`🔥💥 STREAK BROKEN — x${lostStreak} combo lost. Bonus reset to zero.`);
+      }
       if (choice.score < 0) toast.error('Wrong call. ' + choice.result);
       // Maybe trigger chaos event
       if (shouldTrigger(30)) {
@@ -635,6 +654,7 @@ export default function MissionScreen() {
 
     const pct = correct / step.fields.length;
     const score = Math.round((step.score || 30) * pct);
+    const si = streakInfo(state.streak);
 
     setInputResults(results);
     setSubmitted(true);
@@ -643,17 +663,29 @@ export default function MissionScreen() {
 
     dispatch({ type: 'APPLY_EFFECTS', effects: pct === 1 ? { clarity: 8, readiness: 6, cmd: 3 } : pct >= 0.7 ? { clarity: 3, readiness: 1 } : { clarity: -8, readiness: -8, chaos: 8, cmd: -4 } });
     dispatch({ type: 'SPEND_TIME', minutes: 6 + step.fields.length * 2 });
-    dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) });
     setMissionScore(prev => prev + score);
 
     if (pct === 1) {
+      const bonus = si.active ? Math.round(score * si.bonusPct / 100) : 0;
+      const newStreak = state.streak + 1;
       dispatch({ type: 'ADD_STREAK' });
-      toast.success(`Perfect! All ${step.fields.length} correct. +${score} pts`);
+      dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) + bonus });
+      if (bonus > 0) streakBonusRef.current += bonus;
+      playSfx(newStreak >= 2 ? 'streak' : 'correct');
+      setFx({ points: score, bonus, streak: newStreak, bonusPct: streakInfo(newStreak).bonusPct });
+      toast.success(`Perfect! All ${step.fields.length} correct. +${score} pts` + (bonus > 0 ? ` (+${bonus} streak)` : ''));
     } else if (pct >= 0.7) {
+      dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) });
       toast.info(`${correct}/${step.fields.length} correct. +${score} pts`);
     } else {
+      const lostStreak = state.streak;
+      dispatch({ type: 'ADD_XP', amount: Math.round(score / 2) });
       dispatch({ type: 'RESET_STREAK' });
       dispatch({ type: 'ADD_CHAOS', amount: state.difficulty === 'nightmare' || state.difficulty === 'qual' ? 18 : diff.hard ? 12 : 8 });
+      if (lostStreak >= 2) {
+        playSfx('break');
+        toast.error(`🔥💥 STREAK BROKEN — x${lostStreak} combo lost.`);
+      }
       toast.error(`${correct}/${step.fields.length} correct. Review the formulas.`);
     }
 
@@ -668,10 +700,24 @@ export default function MissionScreen() {
       const maxScore = getMissionMax(mission);
       const pct = maxScore > 0 ? finalScore / maxScore : 0;
       const weightedPoints = Math.round(finalScore * diff.mult);
-      const creditsEarned = missionCreditReward(finalScore, diff.mult);
+      const baseCredits = missionCreditReward(finalScore, diff.mult);
+      // Supply drop: variable reward in place of flat credits
+      const loot = rollSupplyDrop(pct, baseCredits);
+      const creditsEarned = loot.credits;
+      const streakBonusEarned = streakBonusRef.current;
+      // Near-miss: how many points short of GOLD (only when narrowly missed)
+      const ptsToGold = Math.ceil(0.9 * maxScore - finalScore);
+      const nearMissPts = grade(finalScore, maxScore) !== 'GOLD' && ptsToGold > 0 && ptsToGold <= Math.max(8, maxScore * 0.12)
+        ? ptsToGold
+        : undefined;
       dispatch({ type: 'COMPLETE_MISSION', missionId: mission.id, score: finalScore, max: maxScore });
       dispatch({ type: 'ADD_CREDS', amount: creditsEarned });
       dispatch({ type: 'ADD_XP', amount: 50 });
+      if (loot.bonusCard) {
+        // Free grant (cost 0) — BUY_ITEM wires the card into the right counter
+        dispatch({ type: 'BUY_ITEM', itemId: loot.bonusCard, cost: 0 });
+      }
+      playSfx(loot.tier === 'gold' ? 'gold' : 'loot');
       if (pct >= 1) {
         dispatch({ type: 'ADD_ACHIEVEMENT', achievement: {
           id: 'perfect_mission',
@@ -712,6 +758,9 @@ export default function MissionScreen() {
         grade: grade(finalScore, maxScore),
         max: maxScore,
         missionScore: finalScore,
+        loot,
+        streakBonus: streakBonusEarned,
+        nearMissPts,
       }});
       dispatch({ type: 'SET_SCREEN', screen: 'result' });
     } else {
@@ -737,6 +786,8 @@ export default function MissionScreen() {
           onDismiss={() => setPendingAchievement(null)}
         />
       )}
+      {/* Correct-answer reward feedback */}
+      <PositiveFX data={fx} onDone={() => setFx(null)} />
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Mission Header */}
         <div className="flex items-center gap-3 mb-4">
@@ -746,7 +797,14 @@ export default function MissionScreen() {
           <div className="flex-1">
             <ProgressBar value={state.stepIndex} max={totalSteps} label={`${mission.name} — Step ${state.stepIndex + 1}/${totalSteps}`} />
           </div>
-          <span className="text-xs text-yellow-400 mono font-bold">{missionScore} pts</span>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs text-yellow-400 mono font-bold">{missionScore} pts</span>
+            {state.streak >= 2 && (
+              <span className="text-[10px] mono font-bold px-2 py-0.5 rounded-full border border-orange-400/40 bg-orange-400/10 text-orange-300 animate-pulse">
+                🔥 x{state.streak} · +{streakInfo(state.streak).bonusPct}%
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Step Header */}

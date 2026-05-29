@@ -3,6 +3,7 @@ import { ScreenWrap, MilCard, MilButton, GradeBadge, SectionTitle, Divider } fro
 import { grade, gradeColor, passThresholdForDifficulty } from '../../lib/gameData';
 import { ChaosMeter } from '../../components/ChaosOverlay';
 import OutcomeFX from '../../components/OutcomeFX';
+import SupplyDrop from '../../components/SupplyDrop';
 
 const MISSIONS_COUNT = 10;
 
@@ -77,6 +78,30 @@ export default function ResultScreen() {
               )}
             </div>
 
+            {/* Supply drop reveal */}
+            {r.loot && <SupplyDrop loot={r.loot} />}
+
+            {/* Near-miss nudge — the replay hook */}
+            {r.nearMissPts && r.nearMissPts > 0 && (
+              <div className="mil-card mil-card-gold p-4 mb-4 animate-fade-in-up">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">🎯</span>
+                  <div className="flex-1">
+                    <div className="font-black text-yellow-300" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                      SO CLOSE — {r.nearMissPts} {r.nearMissPts === 1 ? 'point' : 'points'} from 🥇 GOLD
+                    </div>
+                    <div className="text-xs text-slate-400">One cleaner calculation and the GOLD is yours. Run it back?</div>
+                  </div>
+                  <MilButton color="gold" onClick={() => {
+                    dispatch({ type: 'INIT_MISSION', missionIndex: r.missionIndex ?? 0 });
+                    dispatch({ type: 'SET_SCREEN', screen: 'mission' });
+                  }}>
+                    🔄 REPLAY
+                  </MilButton>
+                </div>
+              </div>
+            )}
+
             {/* Stats */}
             <div className="mil-card p-4 mb-4">
               <div className="text-xs text-slate-500 mono mb-3">// CAMPAIGN STATUS</div>
@@ -94,6 +119,13 @@ export default function ResultScreen() {
                   <div className="text-[10px] text-slate-500 mono">MISSIONS DONE</div>
                 </div>
               </div>
+              {/* Streak bonus earned this mission */}
+              {r.streakBonus && r.streakBonus > 0 && (
+                <div className="mb-3 flex items-center justify-between rounded-lg border border-orange-400/30 bg-orange-400/10 px-3 py-2">
+                  <span className="text-xs text-orange-300 mono font-bold">🔥 STREAK BONUS</span>
+                  <span className="text-xs text-orange-200 mono font-bold">+{r.streakBonus} XP</span>
+                </div>
+              )}
               {/* Chaos meter */}
               <ChaosMeter value={state.chaosMeter} />
             </div>

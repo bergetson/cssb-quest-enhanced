@@ -134,6 +134,44 @@ function cleanEntry(entry: LeaderboardEntry, source: LeaderboardEntry['source'])
   };
 }
 
+export interface Rival {
+  entry: LeaderboardEntry;
+  relation: 'ahead' | 'behind';
+  gap: number;
+}
+
+// Find the nearest competitor to chase. Prefers the closest entry *above* the
+// player's score on the same challenge ("beat it?"); if the player is on top,
+// returns the closest entry behind them ("defend your lead").
+export function findRival(
+  entries: LeaderboardEntry[],
+  myId: string,
+  myScore: number,
+  challenge?: string,
+): Rival | null {
+  let pool = entries.filter(e => e.id !== myId);
+  if (challenge) {
+    const sameChallenge = pool.filter(e => e.challenge === challenge);
+    if (sameChallenge.length) pool = sameChallenge;
+  }
+  if (!pool.length) return null;
+
+  const above = pool
+    .filter(e => e.score > myScore)
+    .sort((a, b) => a.score - b.score);
+  if (above.length) {
+    return { entry: above[0], relation: 'ahead', gap: above[0].score - myScore };
+  }
+
+  const below = pool
+    .filter(e => e.score <= myScore)
+    .sort((a, b) => b.score - a.score);
+  if (below.length) {
+    return { entry: below[0], relation: 'behind', gap: myScore - below[0].score };
+  }
+  return null;
+}
+
 export function rankEntries(entries: LeaderboardEntry[]) {
   return entries
     .slice()
