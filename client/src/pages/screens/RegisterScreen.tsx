@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { MilButton, MilCard, ScreenWrap, SectionTitle } from '../../components/GameUI';
 import { DIFFS, generateChallengeCode, type Difficulty } from '../../lib/gameData';
+import { accentText, accentTint } from '../../lib/colors';
 
 const RANKS = ['PVT', 'PFC', 'SPC', 'CPL', 'SGT', 'SSG', 'SFC', 'MSG', '1SG', 'SGM', 'CSM', '2LT', '1LT', 'CPT', 'MAJ', 'LTC', 'COL'];
 
@@ -105,13 +106,12 @@ export default function RegisterScreen() {
                 key={key}
                 onClick={() => setDiff(key)}
                 className={`text-left p-3 rounded-xl border transition-all ${
-                  diff === key
-                    ? `border-${d.color}-400/60 bg-${d.color}-400/10`
-                    : 'border-white/8 bg-white/2 hover:border-white/15'
+                  diff === key ? '' : 'border-white/8 bg-white/2 hover:border-white/15'
                 }`}
+                style={diff === key ? accentTint(d.color, 0.1, 0.6) : undefined}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-sm font-bold ${diff === key ? `text-${d.color}-400` : 'text-slate-400'}`} style={{ fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.06em' }}>
+                  <span className={`text-sm font-bold ${diff === key ? '' : 'text-slate-400'}`} style={{ fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.06em', ...(diff === key ? accentText(d.color) : {}) }}>
                     {d.name}
                   </span>
                   <span className="text-[10px] text-slate-600 mono">{d.time}min • ×{d.mult}</span>

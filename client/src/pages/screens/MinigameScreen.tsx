@@ -3,6 +3,7 @@ import { useGame } from '../../contexts/GameContext';
 import { ScreenWrap, SectionTitle, MilCard, MilButton, MilTag } from '../../components/GameUI';
 import { toast } from 'sonner';
 import { minigameCreditReward } from '../../lib/gameplayUtils';
+import { accentText } from '../../lib/colors';
 
 // ─── Figarelli Tic-Tac-Toe ──────────────────────────────────────────────────
 // LTC Figarelli uses unnecessarily large words. Win for 35 CR.
@@ -985,7 +986,7 @@ export default function MinigameScreen() {
                   <div className="text-3xl">{g.emoji}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <div className={`text-sm font-bold text-${g.color}-400`} style={{ fontFamily: 'Rajdhani, sans-serif' }}>{g.name}</div>
+                      <div className="text-sm font-bold" style={{ fontFamily: 'Rajdhani, sans-serif', ...accentText(g.color) }}>{g.name}</div>
                       <span className={`text-[10px] mono font-bold ${diffColor(g.difficulty)}`}>{g.difficulty}</span>
                     </div>
                     <div className="text-xs text-slate-500">{g.desc}</div>
