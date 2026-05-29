@@ -6,6 +6,7 @@ import {
 } from '../../components/GameUI';
 import {
   DIFFS, CHARS, makeScenario, class1Vals, fuelVals, ammoVals, finalVals,
+  finalDriverRecommendation,
   grade, parseNum, fmtN, ceilN, passThresholdForDifficulty, type Scenario,
 } from '../../lib/gameData';
 import { missionCreditReward, shuffleWithSeed, streakInfo, rollSupplyDrop } from '../../lib/gameplayUtils';
@@ -453,7 +454,7 @@ function buildMissions(s: Scenario): { id: string; name: string; color: string; 
           kind: 'choice', speaker: 'bc', loc: 'FINAL BRIEF',
           text: 'LTC Figarelle says: "Give me your recommendation. One sentence."',
           choices: [
-            ch(`Recommend COA 2: ${final.tripsReq} lifts, ${final.driversReq} drivers required, shortfall of ${Math.abs(Math.min(0, final.driverDelta))} drivers — request augmentation.`, 20, { cmd: 15, clarity: 12 }, 'The BC nods. "That is staff work."', 'A recommendation includes the decision, the risk, and the ask.', true),
+            ch(finalDriverRecommendation(final), 20, { cmd: 15, clarity: 12 }, 'The BC nods. "That is staff work."', 'A recommendation includes the decision, the risk, and the ask.', true),
             ch('Sir, we are still analyzing.', -20, { cmd: -18, clarity: -15 }, 'The BC has heard this before. He is not impressed.', 'Analysis without recommendation is not staff work.'),
             ch('Sir, all COAs are viable.', -15, { cmd: -12, clarity: -10 }, 'The BC stares. "Then why did I pay for a staff?"', 'If all COAs are viable, you have not analyzed them.'),
             ch('Sir, I recommend we wait for more information.', -10, { cmd: -8, tempo: -8 }, 'The commander needed a decision, not a delay.', 'The staff\'s job is to reduce uncertainty, not to wait for certainty.'),

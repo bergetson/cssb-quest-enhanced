@@ -344,6 +344,17 @@ export function finalVals(s: Scenario) {
   };
 }
 
+export function finalDriverRecommendation(final: ReturnType<typeof finalVals>) {
+  const driverStatus =
+    final.driverDelta < 0
+      ? `shortfall of ${Math.abs(final.driverDelta)} drivers — request augmentation`
+      : final.driverDelta > 0
+        ? `surplus of ${final.driverDelta} drivers — no augmentation required`
+        : 'driver requirement exactly met — no augmentation required';
+
+  return `Recommend COA 2: ${final.tripsReq} lifts, ${final.driversReq} drivers required, ${driverStatus}.`;
+}
+
 // ─── Characters ───────────────────────────────────────────────────────────────
 
 export const CHARS: Record<string, { name: string; emoji: string; color: string; title: string }> = {

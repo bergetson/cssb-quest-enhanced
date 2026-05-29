@@ -6,6 +6,7 @@
 
 import {
   makeScenario, class1Vals, fuelVals, ammoVals, finalVals,
+  finalDriverRecommendation,
 } from '../client/src/lib/gameData.ts';
 
 const ceil = Math.ceil;
@@ -116,6 +117,24 @@ function audit(seed: string) {
   check(seed, 'M10', 'tripsReq', ceil(totalPallets / (2 * 8 + 2 * 2)), final.tripsReq, 0);
   check(seed, 'M10', 'driversReq', (2 + 2 + 1 + 1) * 2, final.driversReq, 0);
   check(seed, 'M10', 'driverDelta', s.driverAvail - 12, final.driverDelta, 0);
+
+  const recommendation = finalDriverRecommendation(final);
+  if (final.driverDelta >= 0 && /shortfall|request augmentation/i.test(recommendation)) {
+    issues.push({
+      seed,
+      mission: 'M10',
+      field: 'finalRecommendation',
+      detail: `surplus/exact driver state should not request augmentation: ${recommendation}`,
+    });
+  }
+  if (final.driverDelta < 0 && !/shortfall|request augmentation/i.test(recommendation)) {
+    issues.push({
+      seed,
+      mission: 'M10',
+      field: 'finalRecommendation',
+      detail: `driver shortfall should request augmentation: ${recommendation}`,
+    });
+  }
 }
 
 // Exercise the discrete scenario space thoroughly.

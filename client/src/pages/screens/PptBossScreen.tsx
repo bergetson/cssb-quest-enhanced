@@ -193,7 +193,18 @@ export default function PptBossScreen() {
   const hpColor = (hp: number) => hp > 60 ? '#4ade80' : hp > 30 ? '#facc15' : '#ef4444';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-red-950/20 to-slate-950 flex flex-col items-center justify-center p-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-red-950/20 to-slate-950 flex flex-col items-center justify-center p-4">
+      {phase !== 'victory' && phase !== 'defeat' && (
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'hub' })}
+          aria-label="Return to hub"
+          className="absolute left-4 top-4 z-10 rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-xs font-bold tracking-widest text-slate-300 transition-colors hover:border-red-400/60 hover:text-red-300"
+          style={{ fontFamily: 'Rajdhani, sans-serif' }}
+        >
+          ← HUB
+        </button>
+      )}
 
       {/* Intro */}
       <AnimatePresence>
